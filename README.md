@@ -103,8 +103,10 @@
 ### Локально с Docker (PostgreSQL + Redis)
 
 ```bash
-# Запустить БД и Redis
+# Запустить БД и Redis (если есть: docker compose up -d, иначе: docker-compose up -d)
 docker compose up -d
+# или
+docker-compose up -d
 
 # Скопировать переменные и задать TMDB_API_KEY
 cp .env.example .env
@@ -124,6 +126,21 @@ npm run dev      # http://localhost:3000
 ```
 
 Переменные окружения описаны в `.env.example`. Для бэкенда обязательны: `DATABASE_URL`, `JWT_SECRET`, `TMDB_API_KEY`. Для веб — по желанию `NEXT_PUBLIC_API_URL` (по умолчанию `http://localhost:4000`).
+
+### Прод-сервер (уже настроено на этом хосте)
+
+- **PostgreSQL и Redis:** `docker-compose up -d` (или `docker compose up -d`)
+- **Backend:** `cd backend && npm install && npm run db:migrate && npm run build`; запуск через pm2: `pm2 start ecosystem.config.cjs`
+- **Web:** `cd web && npm install && npm run build`; запуск через pm2 (см. `ecosystem.config.cjs`)
+- **Автозапуск:** `pm2 save && pm2 startup` — после перезагрузки сервера pm2 поднимет приложения
+
+В `.env` (и `backend/.env`) задайте: `TMDB_API_KEY`, при доступе по домену — `WEB_ORIGIN=https://pairlyapp.ru,https://www.pairlyapp.ru`.
+
+### Домен и HTTPS (pairlyapp.ru)
+
+- **Nginx:** обратный прокси на портах 80/443; `/api/` → backend (4000), `/` → Next.js (3000).
+- **SSL:** Let's Encrypt (certbot), автообновление сертификата.
+- **Доступ:** https://pairlyapp.ru и https://www.pairlyapp.ru. API вызывается с того же хоста (`/api/...`), CORS настроен на указанные origins.
 
 ### CI
 

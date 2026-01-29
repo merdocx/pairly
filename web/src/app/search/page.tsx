@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, getErrorMessage } from '@/lib/api';
 import type { MovieSearch } from '@/lib/api';
+import AppLayout from '@/components/AppLayout';
 
 export default function SearchPage() {
   const router = useRouter();
@@ -14,6 +15,14 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [addingId, setAddingId] = useState<number | null>(null);
+  const [removingId, setRemovingId] = useState<number | null>(null);
+  const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    api<{ items: { movie_id: number }[] }>('/api/watchlist/me')
+      .then((res) => setWatchlistIds(new Set(res.items.map((i) => i.movie_id))))
+      .catch(() => {});
+  }, []);
 
   const search = useCallback(
     async (q: string, page: number = 1) => {
@@ -57,6 +66,7 @@ export default function SearchPage() {
         method: 'POST',
         body: JSON.stringify({ movie_id: movieId }),
       });
+      setWatchlistIds((prev) => new Set(prev).add(movieId));
       alert('Фильм добавлен в «Буду смотреть»');
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Ошибка');
@@ -65,22 +75,26 @@ export default function SearchPage() {
     }
   }
 
+  async function removeFromWatchlist(movieId: number) {
+    setRemovingId(movieId);
+    try {
+      await api(`/api/watchlist/me/${movieId}`, { method: 'DELETE' });
+      setWatchlistIds((prev) => {
+        const next = new Set(prev);
+        next.delete(movieId);
+        return next;
+      });
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
   return (
-    <div className="container">
-      <nav style={{ marginBottom: '1.5rem' }}>
-        <Link href="/watchlist/me">Мой список</Link>
-        {' · '}
-        <Link href="/watchlist/partner">Список партнёра</Link>
-        {' · '}
-        <Link href="/watchlist/intersections">Пересечения</Link>
-        {' · '}
-        <Link href="/search"><strong>Поиск</strong></Link>
-        {' · '}
-        <Link href="/pair">Пара</Link>
-        {' · '}
-        <Link href="/profile">Профиль</Link>
-      </nav>
-      <h1>Поиск фильмов</h1>
+    <AppLayout>
+      <div className="container">
+        <h1>Поиск фильмов</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input
           type="text"
@@ -121,9 +135,15 @@ export default function SearchPage() {
                     </p>
                   )}
                 </div>
-                <button type="button" onClick={() => addToWatchlist(m.id)} disabled={addingId === m.id}>
-                  {addingId === m.id ? '…' : 'В список'}
-                </button>
+                {watchlistIds.has(m.id) ? (
+                  <button type="button" onClick={() => removeFromWatchlist(m.id)} disabled={removingId === m.id}>
+                    {removingId === m.id ? '…' : 'Удалить'}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => addToWatchlist(m.id)} disabled={addingId === m.id}>
+                    {addingId === m.id ? '…' : 'В список'}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -134,6 +154,7 @@ export default function SearchPage() {
           )}
         </>
       )}
-    </div>
+      </div>
+    </AppLayout>
   );
 }

@@ -14,7 +14,7 @@ function uid(req: Request & { user: JwtPayload }) {
 
 watchlistRouter.get('/me', async (req, res, next) => {
   try {
-    const userId = uid(req as Request & { user: JwtPayload });
+    const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     const sort = (req.query.sort as string) || 'added_at';
     const order = sort === 'rating' ? 'r.rating DESC NULLS LAST' : 'w.added_at DESC';
@@ -52,7 +52,7 @@ watchlistRouter.get('/me', async (req, res, next) => {
 
 watchlistRouter.get('/partner', async (req, res, next) => {
   try {
-    const userId = uid(req as Request & { user: JwtPayload });
+    const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     const pair = await pool.query(
       'SELECT user_a_id, user_b_id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',
@@ -89,7 +89,7 @@ watchlistRouter.get('/partner', async (req, res, next) => {
 
 watchlistRouter.get('/intersections', async (req, res, next) => {
   try {
-    const userId = uid(req as Request & { user: JwtPayload });
+    const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     const pair = await pool.query(
       'SELECT user_a_id, user_b_id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',
@@ -138,7 +138,7 @@ watchlistRouter.post('/me', async (req, res, next) => {
   try {
     const body = z.object({ movie_id: z.number().int().positive() }).safeParse(req.body);
     if (!body.success) throw new AppError(400, 'Некорректный movie_id', 'VALIDATION_ERROR');
-    const userId = uid(req as Request & { user: JwtPayload });
+    const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     await pool.query(
       'INSERT INTO watchlist (user_id, movie_id) VALUES ($1, $2) ON CONFLICT (user_id, movie_id) DO NOTHING',
@@ -154,7 +154,7 @@ watchlistRouter.delete('/me/:movieId', async (req, res, next) => {
   try {
     const movieId = Number(req.params.movieId);
     if (!Number.isInteger(movieId) || movieId < 1) throw new AppError(400, 'Некорректный ID', 'VALIDATION_ERROR');
-    const userId = uid(req as Request & { user: JwtPayload });
+    const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     await pool.query('DELETE FROM ratings WHERE user_id = $1 AND movie_id = $2', [userId, movieId]);
     const del = await pool.query('DELETE FROM watchlist WHERE user_id = $1 AND movie_id = $2 RETURNING id', [userId, movieId]);
@@ -171,7 +171,7 @@ watchlistRouter.put('/me/:movieId/rate', async (req, res, next) => {
     if (!Number.isInteger(movieId) || movieId < 1) throw new AppError(400, 'Некорректный ID', 'VALIDATION_ERROR');
     const body = z.object({ rating: z.number().int().min(1).max(10) }).safeParse(req.body);
     if (!body.success) throw new AppError(400, 'Оценка от 1 до 10', 'VALIDATION_ERROR');
-    const userId = uid(req as Request & { user: JwtPayload });
+    const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     const inList = await pool.query('SELECT id FROM watchlist WHERE user_id = $1 AND movie_id = $2', [userId, movieId]);
     if (inList.rows.length === 0) throw new AppError(400, 'Оценку можно поставить только фильму из своего списка', 'NOT_IN_WATCHLIST');
@@ -189,7 +189,7 @@ watchlistRouter.delete('/me/:movieId/rate', async (req, res, next) => {
   try {
     const movieId = Number(req.params.movieId);
     if (!Number.isInteger(movieId) || movieId < 1) throw new AppError(400, 'Некорректный ID', 'VALIDATION_ERROR');
-    const userId = uid(req as Request & { user: JwtPayload });
+    const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     await pool.query('DELETE FROM ratings WHERE user_id = $1 AND movie_id = $2', [userId, movieId]);
     res.json({ message: 'Статус «Просмотрено» снят' });

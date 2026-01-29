@@ -94,7 +94,7 @@ authRouter.post('/login', async (req, res, next) => {
 
 authRouter.get('/me', authMiddleware, async (req, res, next) => {
   try {
-    const { userId } = (req as Request & { user: JwtPayload }).user;
+    const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
     const pool = getPool();
     const result = await pool.query(
       'SELECT id, email, name FROM users WHERE id = $1',

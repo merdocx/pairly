@@ -1,5 +1,6 @@
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.TMDB_API_KEY || '';
+const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN || '';
 const LANGUAGE = 'ru-RU';
 const REGION = 'RU';
 
@@ -15,7 +16,9 @@ async function tmdbFetch<T>(path: string, cacheKey?: string, ttl?: number): Prom
     if (cached) return cached;
   }
   const url = `${TMDB_BASE}${path}${path.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=${LANGUAGE}&region=${REGION}`;
-  const res = await fetch(url);
+  const headers: HeadersInit = {};
+  if (TMDB_ACCESS_TOKEN) headers['Authorization'] = `Bearer ${TMDB_ACCESS_TOKEN}`;
+  const res = await fetch(url, { headers });
   if (res.status === 429) {
     throw new Error('Превышен лимит запросов. Попробуйте позже.');
   }

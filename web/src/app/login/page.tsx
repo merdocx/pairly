@@ -23,7 +23,7 @@ export default function LoginPage() {
         token: null,
       });
       localStorage.setItem('token', data.token);
-      router.replace('/watchlist/me');
+      router.replace('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка входа');
     } finally {

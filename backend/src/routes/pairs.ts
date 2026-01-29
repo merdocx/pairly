@@ -21,7 +21,7 @@ pairsRouter.use(authMiddleware);
 
 pairsRouter.get('/', async (req, res, next) => {
   try {
-    const { userId } = (req as Request & { user: JwtPayload }).user;
+    const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
     const pool = getPool();
     const pair = await pool.query(
       `SELECT p.id, p.code, p.user_a_id, p.user_b_id, p.created_at,
@@ -57,7 +57,7 @@ pairsRouter.get('/', async (req, res, next) => {
 // Create pair (user becomes user_a, gets a 6-digit code)
 pairsRouter.post('/create', async (req, res, next) => {
   try {
-    const { userId } = (req as Request & { user: JwtPayload }).user;
+    const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
     const pool = getPool();
     const existing = await pool.query(
       'SELECT id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',
@@ -93,7 +93,7 @@ pairsRouter.post('/join', async (req, res, next) => {
       const msg = body.error.errors.map((e) => e.message).join('; ');
       throw new AppError(400, msg, 'VALIDATION_ERROR');
     }
-    const { userId } = (req as Request & { user: JwtPayload }).user;
+    const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
     const { code } = body.data;
     const pool = getPool();
     const existing = await pool.query(
@@ -135,7 +135,7 @@ pairsRouter.post('/join', async (req, res, next) => {
 
 pairsRouter.post('/leave', async (req, res, next) => {
   try {
-    const { userId } = (req as Request & { user: JwtPayload }).user;
+    const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
     const pool = getPool();
     const pair = await pool.query(
       'SELECT id, user_a_id, user_b_id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',

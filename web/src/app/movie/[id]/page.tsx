@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, getErrorMessage } from '@/lib/api';
 import type { MovieDetail } from '@/lib/api';
+import AppLayout from '@/components/AppLayout';
 
 export default function MoviePage() {
   const router = useRouter();
@@ -87,31 +88,21 @@ export default function MoviePage() {
     }
   }
 
-  if (loading) return <div className="container">Загрузка...</div>;
+  if (loading) return <AppLayout><div className="container">Загрузка...</div></AppLayout>;
   if (error || !movie) {
     return (
-      <div className="container">
-        <p style={{ color: 'var(--error)' }}>{error || 'Фильм не найден'}</p>
-        <Link href="/search">К поиску</Link>
-      </div>
+      <AppLayout>
+        <div className="container">
+          <p style={{ color: 'var(--error)' }}>{error || 'Фильм не найден'}</p>
+          <Link href="/search">К поиску</Link>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="container">
-      <nav className="app-nav">
-        <Link href="/watchlist/me">Мой список</Link>
-        {' · '}
-        <Link href="/watchlist/partner">Список партнёра</Link>
-        {' · '}
-        <Link href="/watchlist/intersections">Пересечения</Link>
-        {' · '}
-        <Link href="/search">Поиск</Link>
-        {' · '}
-        <Link href="/pair">Пара</Link>
-        {' · '}
-        <Link href="/profile">Профиль</Link>
-      </nav>
+    <AppLayout>
+      <div className="container">
       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         <div>
           {movie.poster_path_thumb || movie.poster_path ? (
@@ -196,6 +187,7 @@ export default function MoviePage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

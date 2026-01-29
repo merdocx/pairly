@@ -8,7 +8,18 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 export const app = express();
 
-app.use(cors({ origin: process.env.WEB_ORIGIN || 'http://localhost:3000', credentials: true }));
+const corsOrigin = process.env.WEB_ORIGIN || 'http://localhost:3000';
+const allowedOrigins = corsOrigin.split(',').map((o) => o.trim());
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(null, false);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.use('/api/auth', authRouter);

@@ -1,11 +1,15 @@
-import Redis from 'ioredis';
+import { createRequire } from 'module';
 
-let redis: Redis | null = null;
+const require = createRequire(import.meta.url);
+type RedisClient = { get: (k: string) => Promise<string | null>; setex: (k: string, ttl: number, v: string) => Promise<unknown>; ping: () => Promise<string> };
 
-export function getRedis(): Redis {
+const Redis = require('ioredis');
+let redis: RedisClient | null = null;
+
+export function getRedis(): RedisClient {
   if (!redis) {
     const url = process.env.REDIS_URL || 'redis://localhost:6379';
-    redis = new Redis(url);
+    redis = new Redis(url) as RedisClient;
   }
   return redis;
 }

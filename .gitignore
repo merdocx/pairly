@@ -31,3 +31,7 @@ build/
 .profile
 .viminfo
 .ssh/
+
+# Runtime / deployment (server-specific)
+.pm2/
+.npm/

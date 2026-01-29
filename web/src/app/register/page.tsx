@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, getErrorMessage } from '@/lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,15 +18,20 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      const data = await api<{ token: string }>('/api/auth/register', {
+      const data = await api<{ token?: string; user?: unknown }>('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email, password, name }),
         token: null,
       });
+      if (!data.token) {
+        setError('Ошибка ответа сервера. Попробуйте ещё раз.');
+        setLoading(false);
+        return;
+      }
       localStorage.setItem('token', data.token);
-      router.replace('/watchlist/me');
+      router.replace('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка регистрации');
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -35,8 +40,8 @@ export default function RegisterPage() {
   return (
     <div className="container" style={{ maxWidth: 400, marginTop: '3rem' }}>
       <h1 style={{ marginBottom: '1.5rem' }}>Регистрация</h1>
-      <form onSubmit={handleSubmit}>
-        {error && <p style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</p>}
+      <form onSubmit={handleSubmit} noValidate>
+        {error && <p role="alert" style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</p>}
         <div style={{ marginBottom: '1rem' }}>
           <label style={{ display: 'block', marginBottom: 4 }}>Email</label>
           <input

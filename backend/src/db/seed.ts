@@ -1,3 +1,4 @@
+import 'dotenv/config';
 /**
  * Seed script: optional initial data.
  * Run with: npm run db:seed

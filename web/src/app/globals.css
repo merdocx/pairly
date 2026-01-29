@@ -116,3 +116,86 @@ input[type="password"] {
   .list-row > *:first-child { flex-shrink: 0; }
   .list-row .list-row-actions { width: 100%; margin-top: 0.25rem; }
 }
+
+/* Нижнее меню: Фильмы | Поиск | Профиль */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.app-content {
+  flex: 1;
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 100;
+}
+.bottom-nav a {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+}
+.bottom-nav a:hover {
+  color: var(--text);
+  background: var(--bg);
+  text-decoration: none;
+}
+.bottom-nav a.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Вкладки наверху экрана (Мое / Партнера / Общее) */
+.films-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+.films-tabs a,
+.films-tabs button {
+  flex: 1;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.films-tabs a:hover,
+.films-tabs button:hover {
+  color: var(--text);
+  background: var(--bg);
+  text-decoration: none;
+}
+.films-tabs a.active,
+.films-tabs button.active {
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--bg);
+  margin-bottom: -1px;
+  border-bottom: 2px solid var(--accent);
+}

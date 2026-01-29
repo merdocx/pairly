@@ -1,4 +1,10 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+function getApiUrl(): string {
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+}
+const API_URL = getApiUrl();
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -15,9 +21,17 @@ export async function api<T>(
     ...(rest.headers as Record<string, string>),
   };
   if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_URL}${path}`, { ...rest, headers });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText || 'Ошибка запроса');
+  const base = typeof window !== 'undefined' ? getApiUrl() : API_URL;
+  const res = await fetch(`${base}${path}`, { ...rest, headers });
+  let data: Record<string, unknown>;
+  try {
+    const text = await res.text();
+    data = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  } catch {
+    if (!res.ok) throw new Error(res.statusText || 'Ошибка запроса');
+    throw new Error('Некорректный ответ сервера');
+  }
+  if (!res.ok) throw new Error((data.error as string) || res.statusText || 'Ошибка запроса');
   return data as T;
 }
 

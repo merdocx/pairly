@@ -30,7 +30,7 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   const token = authHeader.slice(7);
   try {
     const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    (req as Request & { user?: JwtPayload }).user = payload;
+    (req as unknown as Request & { user?: JwtPayload }).user = payload;
   } catch {
     // ignore
   }
