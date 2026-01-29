@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import type { WatchlistItem, IntersectionItem } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { PosterImage } from '@/components/PosterImage';
 
 type FilmsTab = 'me' | 'partner' | 'intersections';
 
@@ -60,9 +61,9 @@ function HomePageContent() {
   return (
     <AppLayout>
       <div className="container">
-        {tab === 'me' && <MyList />}
-        {tab === 'partner' && <PartnerList />}
-        {tab === 'intersections' && <IntersectionsList />}
+        <div style={{ display: tab === 'me' ? 'block' : 'none' }}><MyList /></div>
+        <div style={{ display: tab === 'partner' ? 'block' : 'none' }}><PartnerList /></div>
+        <div style={{ display: tab === 'intersections' ? 'block' : 'none' }}><IntersectionsList /></div>
       </div>
     </AppLayout>
   );
@@ -145,11 +146,7 @@ function MyList() {
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {items.map((item) => (
             <li key={item.movie_id} className="list-row" style={{ opacity: item.watched ? 0.8 : 1 }}>
-              {item.poster_path ? (
-                <img src={item.poster_path} alt="" width={60} height={90} style={{ objectFit: 'cover', borderRadius: 4 }} />
-              ) : (
-                <div style={{ width: 60, height: 90, background: 'var(--surface)', borderRadius: 4 }} />
-              )}
+              <PosterImage src={item.poster_path} width={60} height={90} />
               <div style={{ flex: 1 }}>
                 <Link href={`/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
                   {item.title}
@@ -226,11 +223,7 @@ function PartnerList() {
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {items.map((item) => (
           <li key={item.movie_id} className="list-row">
-            {item.poster_path ? (
-              <img src={item.poster_path} alt="" width={60} height={90} style={{ objectFit: 'cover', borderRadius: 4 }} />
-            ) : (
-              <div style={{ width: 60, height: 90, background: 'var(--surface)', borderRadius: 4 }} />
-            )}
+            <PosterImage src={item.poster_path} width={60} height={90} />
             <div>
               <Link href={`/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
                 {item.title}
@@ -290,11 +283,7 @@ function IntersectionsList() {
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {items.map((item) => (
           <li key={item.movie_id} className="list-row">
-            {item.poster_path ? (
-              <img src={item.poster_path} alt="" width={60} height={90} style={{ objectFit: 'cover', borderRadius: 4 }} />
-            ) : (
-              <div style={{ width: 60, height: 90, background: 'var(--surface)', borderRadius: 4 }} />
-            )}
+            <PosterImage src={item.poster_path} width={60} height={90} />
             <div style={{ flex: 1 }}>
               <Link href={`/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
                 {item.title}

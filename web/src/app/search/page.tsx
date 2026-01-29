@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { api, getErrorMessage } from '@/lib/api';
 import type { MovieSearch } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { PosterImage } from '@/components/PosterImage';
 
 export default function SearchPage() {
   const router = useRouter();
@@ -119,11 +120,7 @@ export default function SearchPage() {
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {data.results.map((m) => (
               <li key={`${m.media_type}-${m.id}`} className="list-row">
-                {m.poster_path ? (
-                  <img src={m.poster_path} alt="" width={60} height={90} style={{ objectFit: 'cover', borderRadius: 4 }} />
-                ) : (
-                  <div style={{ width: 60, height: 90, background: 'var(--surface)', borderRadius: 4 }} />
-                )}
+                <PosterImage src={m.poster_path} width={60} height={90} />
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginRight: 6 }}>
                     {m.media_type === 'tv' ? 'Сериал' : 'Фильм'}

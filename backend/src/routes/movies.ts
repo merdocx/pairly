@@ -91,6 +91,7 @@ moviesRouter.get('/:id', async (req, res, next) => {
       runtime: movie.runtime,
     });
   } catch (e) {
+    if (e instanceof AppError) return next(e);
     if (e instanceof Error && (e.message.includes('404') || e.message.includes('Не найден'))) {
       return next(new AppError(404, type === 'tv' ? 'Сериал не найден' : 'Фильм не найден', 'NOT_FOUND'));
     }

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { api, getErrorMessage } from '@/lib/api';
 import type { MovieDetail } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { PosterImage } from '@/components/PosterImage';
 
 export default function MoviePage() {
   const router = useRouter();
@@ -114,24 +115,12 @@ export default function MoviePage() {
       <div className="container">
       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         <div>
-          {movie.poster_path_thumb || movie.poster_path ? (
-            <img
-              src={movie.poster_path_thumb || movie.poster_path || ''}
-              alt=""
-              width={200}
-              height={300}
-              style={{ objectFit: 'cover', borderRadius: 8 }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 200,
-                height: 300,
-                background: 'var(--surface)',
-                borderRadius: 8,
-              }}
-            />
-          )}
+          <PosterImage
+            src={movie.poster_path_thumb || movie.poster_path || null}
+            width={200}
+            height={300}
+            style={{ borderRadius: 8 }}
+          />
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
           <h1 style={{ marginTop: 0 }}>
