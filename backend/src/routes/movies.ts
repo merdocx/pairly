@@ -2,10 +2,11 @@ import { Router } from 'express';
 import {
   searchMovies,
   getMovieDetail,
+  getTvDetail,
   getConfiguration,
   posterPath,
-  type TmdbSearchResult,
   type TmdbMovieDetail,
+  type TmdbTvDetail,
   type TmdbConfiguration,
 } from '../services/tmdb.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -24,6 +25,7 @@ moviesRouter.get('/search', async (req, res, next) => {
     const baseUrl = config.images.secure_base_url || config.images.base_url;
     const results = data.results.map((m) => ({
       id: m.id,
+      media_type: m.media_type,
       title: m.title,
       overview: m.overview,
       release_date: m.release_date,
@@ -50,16 +52,35 @@ moviesRouter.get('/search', async (req, res, next) => {
 });
 
 moviesRouter.get('/:id', async (req, res, next) => {
+  const type = String(req.query.type || 'movie').toLowerCase();
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id < 1) {
-      throw new AppError(400, 'Некорректный ID фильма', 'VALIDATION_ERROR');
+      throw new AppError(400, 'Некорректный ID', 'VALIDATION_ERROR');
     }
-    const movie = await getMovieDetail(id);
     const config = await getConfiguration();
     const baseUrl = config.images.secure_base_url || config.images.base_url;
+    if (type === 'tv') {
+      const tv = await getTvDetail(id);
+      return res.json({
+        id: tv.id,
+        media_type: 'tv',
+        title: tv.name,
+        overview: tv.overview,
+        release_date: tv.first_air_date,
+        poster_path: posterPath(baseUrl, tv.poster_path, 'w780'),
+        poster_path_thumb: posterPath(baseUrl, tv.poster_path, 'w300'),
+        vote_average: tv.vote_average,
+        genres: tv.genres,
+        runtime: null,
+        number_of_seasons: tv.number_of_seasons,
+        number_of_episodes: tv.number_of_episodes,
+      });
+    }
+    const movie = await getMovieDetail(id);
     res.json({
       id: movie.id,
+      media_type: 'movie',
       title: movie.title,
       overview: movie.overview,
       release_date: movie.release_date,
@@ -70,8 +91,8 @@ moviesRouter.get('/:id', async (req, res, next) => {
       runtime: movie.runtime,
     });
   } catch (e) {
-    if (e instanceof Error && e.message.includes('404')) {
-      return next(new AppError(404, 'Фильм не найден', 'NOT_FOUND'));
+    if (e instanceof Error && (e.message.includes('404') || e.message.includes('Не найден'))) {
+      return next(new AppError(404, type === 'tv' ? 'Сериал не найден' : 'Фильм не найден', 'NOT_FOUND'));
     }
     if (e instanceof Error) {
       const msg = e.message.includes('429')

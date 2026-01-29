@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, getErrorMessage } from '@/lib/api';
 import type { MovieDetail } from '@/lib/api';
@@ -10,7 +10,10 @@ import AppLayout from '@/components/AppLayout';
 export default function MoviePage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = Number(params?.id);
+  const type = searchParams.get('type') || 'movie';
+  const isTv = type === 'tv';
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [inWatchlist, setInWatchlist] = useState<boolean | null>(null);
   const [myRating, setMyRating] = useState<number | null>(null);
@@ -23,27 +26,33 @@ export default function MoviePage() {
       setLoading(false);
       return;
     }
+    const typeParam = type === 'tv' ? '?type=tv' : '';
     Promise.all([
-      api<MovieDetail>(`/api/movies/${id}`).catch((e) => {
+      api<MovieDetail>(`/api/movies/${id}${typeParam}`).catch((e) => {
         if (e instanceof Error && e.message.includes('не найден')) return null;
         throw e;
       }),
-      api<{ items: { movie_id: number; rating: number | null }[] }>('/api/watchlist/me')
-        .then((r) => {
-          const item = r.items.find((i) => i.movie_id === id);
-          setInWatchlist(!!item);
-          setMyRating(item?.rating ?? null);
-        })
-        .catch(() => setInWatchlist(false)),
+      isTv
+        ? Promise.resolve(null)
+        : api<{ items: { movie_id: number; rating: number | null }[] }>('/api/watchlist/me')
+            .then((r) => {
+              const item = r.items.find((i) => i.movie_id === id);
+              setInWatchlist(!!item);
+              setMyRating(item?.rating ?? null);
+            })
+            .catch(() => setInWatchlist(false)),
     ])
-      .then(([m]) => setMovie(m ?? null))
+      .then(([m]) => {
+        setMovie(m ?? null);
+        if (isTv) setInWatchlist(false);
+      })
       .catch((e) => {
         if (e instanceof Error && (e.message.includes('401') || e.message.includes('token')))
           router.replace('/login');
         else setError(getErrorMessage(e));
       })
       .finally(() => setLoading(false));
-  }, [id, router]);
+  }, [id, type, isTv, router]);
 
   async function addToWatchlist() {
     try {
@@ -93,7 +102,7 @@ export default function MoviePage() {
     return (
       <AppLayout>
         <div className="container">
-          <p style={{ color: 'var(--error)' }}>{error || 'Фильм не найден'}</p>
+          <p style={{ color: 'var(--error)' }}>{error || (isTv ? 'Сериал не найден' : 'Фильм не найден')}</p>
           <Link href="/search">К поиску</Link>
         </div>
       </AppLayout>
@@ -126,6 +135,7 @@ export default function MoviePage() {
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
           <h1 style={{ marginTop: 0 }}>
+            {movie.media_type === 'tv' && <span style={{ fontSize: '0.85rem', color: 'var(--muted)', marginRight: 8 }}>Сериал</span>}
             {movie.title}
             {movie.release_date && (
               <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: '1rem' }}>
@@ -139,19 +149,29 @@ export default function MoviePage() {
           {movie.genres?.length > 0 && (
             <p style={{ color: 'var(--muted)' }}>{movie.genres.map((g) => g.name).join(', ')}</p>
           )}
-          {movie.runtime != null && movie.runtime > 0 && (
+          {movie.media_type === 'tv' && (movie.number_of_seasons != null || movie.number_of_episodes != null) && (
+            <p style={{ color: 'var(--muted)' }}>
+              {movie.number_of_seasons != null && `${movie.number_of_seasons} сезонов`}
+              {movie.number_of_seasons != null && movie.number_of_episodes != null && ' · '}
+              {movie.number_of_episodes != null && `${movie.number_of_episodes} эп.`}
+            </p>
+          )}
+          {movie.media_type !== 'tv' && movie.runtime != null && movie.runtime > 0 && (
             <p style={{ color: 'var(--muted)' }}>{movie.runtime} мин</p>
           )}
           {movie.overview && (
             <p style={{ marginTop: '1rem', lineHeight: 1.5 }}>{movie.overview}</p>
           )}
           <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {inWatchlist === false && (
+            {movie.media_type !== 'tv' && inWatchlist === false && (
               <button type="button" onClick={addToWatchlist}>
                 Добавить в «Буду смотреть»
               </button>
             )}
-            {inWatchlist && (
+            {movie.media_type === 'tv' && (
+              <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Сериалы пока нельзя добавить в список.</p>
+            )}
+            {movie.media_type !== 'tv' && inWatchlist && (
               <>
                 <button
                   type="button"

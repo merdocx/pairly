@@ -94,7 +94,7 @@ export default function SearchPage() {
   return (
     <AppLayout>
       <div className="container">
-        <h1>Поиск фильмов</h1>
+        <h1>Поиск фильмов и сериалов</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input
           type="text"
@@ -118,14 +118,17 @@ export default function SearchPage() {
           )}
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {data.results.map((m) => (
-              <li key={m.id} className="list-row">
+              <li key={`${m.media_type}-${m.id}`} className="list-row">
                 {m.poster_path ? (
                   <img src={m.poster_path} alt="" width={60} height={90} style={{ objectFit: 'cover', borderRadius: 4 }} />
                 ) : (
                   <div style={{ width: 60, height: 90, background: 'var(--surface)', borderRadius: 4 }} />
                 )}
                 <div style={{ flex: 1 }}>
-                  <Link href={`/movie/${m.id}`} style={{ fontWeight: 500 }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginRight: 6 }}>
+                    {m.media_type === 'tv' ? 'Сериал' : 'Фильм'}
+                  </span>
+                  <Link href={m.media_type === 'tv' ? `/movie/${m.id}?type=tv` : `/movie/${m.id}`} style={{ fontWeight: 500 }}>
                     {m.title}
                     {m.release_date && ` (${m.release_date.slice(0, 4)})`}
                   </Link>
@@ -135,14 +138,16 @@ export default function SearchPage() {
                     </p>
                   )}
                 </div>
-                {watchlistIds.has(m.id) ? (
-                  <button type="button" onClick={() => removeFromWatchlist(m.id)} disabled={removingId === m.id}>
-                    {removingId === m.id ? '…' : 'Удалить'}
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => addToWatchlist(m.id)} disabled={addingId === m.id}>
-                    {addingId === m.id ? '…' : 'В список'}
-                  </button>
+                {m.media_type === 'movie' && (
+                  watchlistIds.has(m.id) ? (
+                    <button type="button" onClick={() => removeFromWatchlist(m.id)} disabled={removingId === m.id}>
+                      {removingId === m.id ? '…' : 'Удалить'}
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => addToWatchlist(m.id)} disabled={addingId === m.id}>
+                      {addingId === m.id ? '…' : 'В список'}
+                    </button>
+                  )
                 )}
               </li>
             ))}
