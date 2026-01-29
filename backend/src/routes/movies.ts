@@ -62,6 +62,7 @@ moviesRouter.get('/:id', async (req, res, next) => {
     const baseUrl = config.images.secure_base_url || config.images.base_url;
     if (type === 'tv') {
       const tv = await getTvDetail(id);
+      res.set('Cache-Control', 'public, max-age=3600');
       return res.json({
         id: tv.id,
         media_type: 'tv',
@@ -78,6 +79,7 @@ moviesRouter.get('/:id', async (req, res, next) => {
       });
     }
     const movie = await getMovieDetail(id);
+    res.set('Cache-Control', 'public, max-age=3600');
     res.json({
       id: movie.id,
       media_type: 'movie',

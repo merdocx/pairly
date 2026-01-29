@@ -20,6 +20,8 @@ export function errorHandler(
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ error: err.message, code: err.code });
   }
-  console.error(err);
+  const timestamp = new Date().toISOString();
+  const details = err instanceof Error ? (err.stack ?? err.message) : String(err);
+  console.error(`[${timestamp}]`, details);
   return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 }

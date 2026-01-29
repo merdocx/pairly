@@ -107,24 +107,18 @@ watchlistRouter.get('/intersections', async (req, res, next) => {
     );
     const config = await getConfiguration().catch(() => null);
     const base = config?.images?.secure_base_url || config?.images?.base_url || '';
+    // По логике SQL рейтингов у возвращаемых фильмов нет (NOT EXISTS ratings для обоих) — запросы не делаем
     const items = await Promise.all(
       rows.rows.map(async (r) => {
         const d = await getMovieDetail(r.movie_id).catch(() => null);
-        const [myR, pr] = await Promise.all([
-          pool.query('SELECT rating FROM ratings WHERE user_id = $1 AND movie_id = $2', [userId, r.movie_id]),
-          pool.query('SELECT rating FROM ratings WHERE user_id = $1 AND movie_id = $2', [partnerId, r.movie_id]),
-        ]);
-        const ra = myR.rows[0]?.rating ?? null;
-        const rb = pr.rows[0]?.rating ?? null;
-        const avg = ra != null && rb != null ? (ra + rb) / 2 : (ra ?? rb);
         return {
           movie_id: r.movie_id,
           title: d?.title ?? '',
           release_date: d?.release_date ?? null,
           poster_path: d?.poster_path ? posterPath(base, d.poster_path, 'w500') : null,
-          my_rating: ra,
-          partner_rating: rb,
-          average_rating: avg != null ? Math.round(avg * 10) / 10 : null,
+          my_rating: null,
+          partner_rating: null,
+          average_rating: null,
         };
       })
     );

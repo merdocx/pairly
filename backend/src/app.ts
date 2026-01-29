@@ -1,3 +1,4 @@
+import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -30,6 +31,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(compression());
 
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
