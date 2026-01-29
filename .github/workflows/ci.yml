@@ -24,7 +24,17 @@ jobs:
       - name: Build
         run: npm run build
       - name: Test
-        run: npm run test
+        env:
+          CI: true
+        run: mkdir -p test-results && npm run test
+      - name: Publish Backend Test Results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Backend tests
+          path: backend/test-results/junit.xml
+          reporter: java-junit
+          fail-on-error: false
 
   web:
     runs-on: ubuntu-latest
@@ -43,4 +53,14 @@ jobs:
       - name: Build
         run: npm run build
       - name: Test
-        run: npm run test
+        env:
+          CI: true
+        run: mkdir -p test-results && npm run test
+      - name: Publish Web Test Results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Web tests
+          path: web/test-results/junit.xml
+          reporter: java-junit
+          fail-on-error: false

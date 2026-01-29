@@ -7,6 +7,9 @@ node_modules/
 .env.*.local
 !.env.example
 
+# Test outputs (CI publishes these)
+test-results/
+
 # Build outputs
 dist/
 .next/

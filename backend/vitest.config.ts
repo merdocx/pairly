@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    reporters: process.env.CI ? ['default', ['junit', { outputFile: 'test-results/junit.xml' }]] : ['default'],
   },
 });
