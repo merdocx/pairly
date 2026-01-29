@@ -4,10 +4,11 @@ const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN || '';
 const LANGUAGE = 'ru-RU';
 const REGION = 'RU';
 
-const CACHE_TTL_SEARCH = 3600;
-const CACHE_TTL_MOVIE = 86400;
-const CACHE_TTL_CONFIG = 604800;
+const CACHE_TTL_SEARCH = 21600; // 6 часов
+const CACHE_TTL_MOVIE = 604800; // 7 дней
+const CACHE_TTL_CONFIG = 604800; // 7 дней
 
+import { getMovieCache, setMovieCache } from '../db/movieCache.js';
 import { cacheGet, cacheSet } from '../db/redis.js';
 
 async function tmdbFetch<T>(
@@ -126,13 +127,21 @@ export async function searchMovies(query: string, page: number): Promise<TmdbSea
 }
 
 export async function getMovieDetail(movieId: number): Promise<TmdbMovieDetail> {
+  const fromDb = await getMovieCache<TmdbMovieDetail>(movieId, 'movie');
+  if (fromDb) return fromDb;
   const cacheKey = `tmdb:movie:${movieId}`;
-  return tmdbFetch<TmdbMovieDetail>(`/movie/${movieId}`, cacheKey, CACHE_TTL_MOVIE);
+  const data = await tmdbFetch<TmdbMovieDetail>(`/movie/${movieId}`, cacheKey, CACHE_TTL_MOVIE);
+  await setMovieCache(movieId, 'movie', data).catch(() => {});
+  return data;
 }
 
 export async function getTvDetail(tvId: number): Promise<TmdbTvDetail> {
+  const fromDb = await getMovieCache<TmdbTvDetail>(tvId, 'tv');
+  if (fromDb) return fromDb;
   const cacheKey = `tmdb:tv:${tvId}`;
-  return tmdbFetch<TmdbTvDetail>(`/tv/${tvId}`, cacheKey, CACHE_TTL_MOVIE);
+  const data = await tmdbFetch<TmdbTvDetail>(`/tv/${tvId}`, cacheKey, CACHE_TTL_MOVIE);
+  await setMovieCache(tvId, 'tv', data).catch(() => {});
+  return data;
 }
 
 export async function getConfiguration(): Promise<TmdbConfiguration> {
