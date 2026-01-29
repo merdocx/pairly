@@ -22,7 +22,7 @@ export async function api<T>(
   };
   if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   const base = typeof window !== 'undefined' ? getApiUrl() : API_URL;
-  const res = await fetch(`${base}${path}`, { ...rest, headers });
+  const res = await fetch(`${base}${path}`, { ...rest, headers, credentials: 'include' });
   let data: Record<string, unknown>;
   try {
     const text = await res.text();

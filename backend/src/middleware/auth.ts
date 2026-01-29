@@ -3,18 +3,26 @@ import jwt from 'jsonwebtoken';
 import { AppError } from './errorHandler.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const AUTH_COOKIE_NAME = 'pairly_token';
 
 export interface JwtPayload {
   userId: string;
   email: string;
 }
 
-export function authMiddleware(req: Request, _res: Response, next: NextFunction) {
+function getTokenFromRequest(req: Request): string | null {
+  const cookie = req.cookies?.[AUTH_COOKIE_NAME];
+  if (cookie) return cookie;
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7);
+  return null;
+}
+
+export function authMiddleware(req: Request, _res: Response, next: NextFunction) {
+  const token = getTokenFromRequest(req);
+  if (!token) {
     return next(new AppError(401, 'Требуется авторизация', 'UNAUTHORIZED'));
   }
-  const token = authHeader.slice(7);
   try {
     const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
     (req as Request & { user: JwtPayload }).user = payload;
@@ -25,9 +33,8 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
 }
 
 export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) return next();
-  const token = authHeader.slice(7);
+  const token = getTokenFromRequest(req);
+  if (!token) return next();
   try {
     const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
     (req as unknown as Request & { user?: JwtPayload }).user = payload;

@@ -31,8 +31,10 @@ export default function ProfilePage() {
   }, [user]);
 
   function handleLogout() {
-    localStorage.removeItem('token');
-    router.replace('/login');
+    api('/api/auth/logout', { method: 'POST', token: null }).catch(() => {}).finally(() => {
+      localStorage.removeItem('token');
+      router.replace('/login');
+    });
   }
 
   async function handleCreatePair() {

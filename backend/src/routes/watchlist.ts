@@ -12,14 +12,17 @@ function uid(req: Request & { user: JwtPayload }) {
   return req.user.userId;
 }
 
+const sortSchema = z.enum(['added_at', 'rating', 'title']).catch('added_at');
+
 watchlistRouter.get('/me', async (req, res, next) => {
   try {
     const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
-    const sort = (req.query.sort as string) || 'added_at';
+    const sort = sortSchema.parse(req.query.sort);
     const order = sort === 'rating' ? 'r.rating DESC NULLS LAST' : 'w.added_at DESC';
     const rows = await pool.query(
-      `SELECT w.movie_id, w.added_at, r.rating FROM watchlist w
+      `SELECT w.movie_id, w.added_at, r.rating, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path
+       FROM watchlist w
        LEFT JOIN ratings r ON r.user_id = w.user_id AND r.movie_id = w.movie_id
        WHERE w.user_id = $1 ORDER BY ${order}`,
       [userId]
@@ -28,7 +31,19 @@ watchlistRouter.get('/me', async (req, res, next) => {
     const config = await getConfiguration().catch(() => null);
     const base = config?.images?.secure_base_url || config?.images?.base_url || '';
     let items = await Promise.all(
-      rows.rows.map(async (r) => {
+      rows.rows.map(async (r: { movie_id: number; added_at: Date; rating: number | null; w_title?: string | null; w_release_date?: string | null; w_poster_path?: string | null }) => {
+        const useCached = r.w_title != null || r.w_poster_path != null;
+        if (useCached) {
+          return {
+            movie_id: r.movie_id,
+            added_at: r.added_at,
+            rating: r.rating ?? null,
+            watched: !!r.rating,
+            title: r.w_title ?? '',
+            release_date: r.w_release_date ?? null,
+            poster_path: r.w_poster_path ? posterPath(base, r.w_poster_path, 'w500') : null,
+          };
+        }
         const d = await getMovieDetail(r.movie_id).catch(() => null);
         return {
           movie_id: r.movie_id,
@@ -62,7 +77,8 @@ watchlistRouter.get('/partner', async (req, res, next) => {
     const partnerId = pair.rows[0].user_a_id === userId ? pair.rows[0].user_b_id : pair.rows[0].user_a_id;
     if (!partnerId) return res.json({ items: [] });
     const rows = await pool.query(
-      `SELECT w.movie_id, w.added_at FROM watchlist w
+      `SELECT w.movie_id, w.added_at, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path
+       FROM watchlist w
        LEFT JOIN ratings r ON r.user_id = w.user_id AND r.movie_id = w.movie_id
        WHERE w.user_id = $1 AND r.rating IS NULL ORDER BY w.added_at DESC`,
       [partnerId]
@@ -70,7 +86,17 @@ watchlistRouter.get('/partner', async (req, res, next) => {
     const config = await getConfiguration().catch(() => null);
     const base = config?.images?.secure_base_url || config?.images?.base_url || '';
     const items = await Promise.all(
-      rows.rows.map(async (r) => {
+      rows.rows.map(async (r: { movie_id: number; added_at: Date; w_title?: string | null; w_release_date?: string | null; w_poster_path?: string | null }) => {
+        const useCached = r.w_title != null || r.w_poster_path != null;
+        if (useCached) {
+          return {
+            movie_id: r.movie_id,
+            added_at: r.added_at,
+            title: r.w_title ?? '',
+            release_date: r.w_release_date ?? null,
+            poster_path: r.w_poster_path ? posterPath(base, r.w_poster_path, 'w500') : null,
+          };
+        }
         const d = await getMovieDetail(r.movie_id).catch(() => null);
         return {
           movie_id: r.movie_id,
@@ -99,7 +125,8 @@ watchlistRouter.get('/intersections', async (req, res, next) => {
     const partnerId = pair.rows[0].user_a_id === userId ? pair.rows[0].user_b_id : pair.rows[0].user_a_id;
     if (!partnerId) return res.json({ items: [] });
     const rows = await pool.query(
-      `SELECT w.movie_id FROM watchlist w WHERE w.user_id = $1
+      `SELECT w.movie_id, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path
+       FROM watchlist w WHERE w.user_id = $1
        AND EXISTS (SELECT 1 FROM watchlist w2 WHERE w2.user_id = $2 AND w2.movie_id = w.movie_id)
        AND NOT EXISTS (SELECT 1 FROM ratings r WHERE r.user_id = $1 AND r.movie_id = w.movie_id)
        AND NOT EXISTS (SELECT 1 FROM ratings r WHERE r.user_id = $2 AND r.movie_id = w.movie_id)`,
@@ -107,9 +134,20 @@ watchlistRouter.get('/intersections', async (req, res, next) => {
     );
     const config = await getConfiguration().catch(() => null);
     const base = config?.images?.secure_base_url || config?.images?.base_url || '';
-    // По логике SQL рейтингов у возвращаемых фильмов нет (NOT EXISTS ratings для обоих) — запросы не делаем
     const items = await Promise.all(
-      rows.rows.map(async (r) => {
+      rows.rows.map(async (r: { movie_id: number; w_title?: string | null; w_release_date?: string | null; w_poster_path?: string | null }) => {
+        const useCached = r.w_title != null || r.w_poster_path != null;
+        if (useCached) {
+          return {
+            movie_id: r.movie_id,
+            title: r.w_title ?? '',
+            release_date: r.w_release_date ?? null,
+            poster_path: r.w_poster_path ? posterPath(base, r.w_poster_path, 'w500') : null,
+            my_rating: null,
+            partner_rating: null,
+            average_rating: null,
+          };
+        }
         const d = await getMovieDetail(r.movie_id).catch(() => null);
         return {
           movie_id: r.movie_id,
@@ -134,10 +172,18 @@ watchlistRouter.post('/me', async (req, res, next) => {
     if (!body.success) throw new AppError(400, 'Некорректный movie_id', 'VALIDATION_ERROR');
     const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
+    const movieId = body.data.movie_id;
     await pool.query(
       'INSERT INTO watchlist (user_id, movie_id) VALUES ($1, $2) ON CONFLICT (user_id, movie_id) DO NOTHING',
-      [userId, body.data.movie_id]
+      [userId, movieId]
     );
+    const d = await getMovieDetail(movieId).catch(() => null);
+    if (d?.title != null || d?.poster_path != null) {
+      await pool.query(
+        'UPDATE watchlist SET title = $1, release_date = $2, poster_path = $3 WHERE user_id = $4 AND movie_id = $5',
+        [d.title ?? null, d.release_date ?? null, d.poster_path ?? null, userId, movieId]
+      );
+    }
     res.status(201).json({ message: 'Фильм добавлен в список' });
   } catch (e) {
     next(e);

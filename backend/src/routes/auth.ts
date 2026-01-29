@@ -8,6 +8,19 @@ import { AppError } from '../middleware/errorHandler.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const SALT_ROUNDS = 10;
+const AUTH_COOKIE_NAME = 'pairly_token';
+const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function setAuthCookie(res: import('express').Response, token: string) {
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie(AUTH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: COOKIE_MAX_AGE_MS,
+  });
+}
 
 const registerSchema = z.object({
   email: z.string().email('Некорректный email'),
@@ -49,6 +62,7 @@ authRouter.post('/register', async (req, res, next) => {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    setAuthCookie(res, token);
     res.status(201).json({
       user: { id: user.id, email: user.email, name: user.name },
       token,
@@ -83,6 +97,7 @@ authRouter.post('/login', async (req, res, next) => {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    setAuthCookie(res, token);
     res.json({
       user: { id: user.id, email: user.email, name: user.name },
       token,
@@ -90,6 +105,11 @@ authRouter.post('/login', async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+
+authRouter.post('/logout', (_req, res) => {
+  res.clearCookie(AUTH_COOKIE_NAME, { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+  res.json({ message: 'Выход выполнен' });
 });
 
 authRouter.get('/me', authMiddleware, async (req, res, next) => {
