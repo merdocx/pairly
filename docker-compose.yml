@@ -1,0 +1,35 @@
+# Pairly: PostgreSQL + Redis for local development.
+# Run: docker compose up -d
+# Backend: set DATABASE_URL=postgresql://pairly:pairly@localhost:5432/pairly and REDIS_URL=redis://localhost:6379
+# Then: cd backend && npm run db:migrate && npm run dev
+# Web: cd web && npm run dev
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: pairly
+      POSTGRES_PASSWORD: pairly
+      POSTGRES_DB: pairly
+    ports:
+      - "5432:5432"
+    volumes:
+      - pairly_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pairly"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pairly_pgdata: {}

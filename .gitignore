@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets — never commit real keys
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# IDE and system
+.cursor/
+.cursor-server/
+.cache/
+.idea/
+.vscode/
+*.log
+.DS_Store
+
+# Optional
+*.local
+
+# System / user files (do not commit)
+.bashrc
+.profile
+.viminfo
+.ssh/
