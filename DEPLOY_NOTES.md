@@ -26,6 +26,17 @@ API ключ и v4 access token прописаны в `.env` и `backend/.env`. 
 
 Текущий сервер: IP **144.124.248.179**. Если он за рубежом, постеры и API TMDB должны работать без правок hosts.
 
+## Обновление с GitHub (после git pull)
+
+Чтобы увидеть изменения на проде после `git pull`:
+
+```bash
+cd /root/pairly
+git pull
+npm run build              # пересборка backend + web
+pm2 restart pairly-backend pairly-web
+```
+
 ## Полезные команды
 
 ```bash
