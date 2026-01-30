@@ -250,15 +250,15 @@ export default function MoviePage() {
 
       {rateModalOpen && (
         <div className="modal-overlay" onClick={() => setRateModalOpen(false)} role="dialog" aria-modal="true" aria-labelledby="rate-movie-title">
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card modal-rate" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="modal-close-x" onClick={() => setRateModalOpen(false)} aria-label="Закрыть">
               ×
             </button>
-            <h2 id="rate-movie-title">Оценить {movie.media_type === 'tv' ? 'сериал' : 'фильм'}</h2>
-            <p className="section-desc" style={{ marginBottom: 16 }}>
-              Как вы оцениваете «{movie.title}»?
+            <h2 id="rate-movie-title" className="modal-rate-title">Оценить {movie.media_type === 'tv' ? 'сериал' : 'фильм'}</h2>
+            <p className="modal-rate-question">
+              Как бы вы оценили «{movie.title}»?
             </p>
-            <div style={{ marginBottom: 8 }}>
+            <div className="modal-rate-stars">
               <StarRatingInput
                 value={myRating}
                 onChange={async (v) => {
@@ -267,21 +267,11 @@ export default function MoviePage() {
                 }}
               />
             </div>
-            <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 20 }}>
+            <p className="modal-rate-hint" aria-live="polite">
               {displayRating > 0 ? `${displayRating} из 5` : 'Выберите оценку'}
             </p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  unwatch();
-                  setRateModalOpen(false);
-                }}
-                style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}
-              >
-                Удалить оценку
-              </button>
-              <button type="button" onClick={() => setRateModalOpen(false)} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+            <div className="modal-rate-actions">
+              <button type="button" className="btn-rate-secondary" onClick={() => setRateModalOpen(false)}>
                 Отмена
               </button>
             </div>

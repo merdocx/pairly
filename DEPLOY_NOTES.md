@@ -33,7 +33,17 @@ API ключ и v4 access token прописаны в `.env` и `backend/.env`. 
 ```bash
 cd /root/pairly
 git pull
-npm run build              # пересборка backend + web
+# Рекомендуется: сборка в фоне, чтобы не обрывать SSH/Cursor при нехватке памяти или таймауте
+npm run build:bg
+tail -f .build.log          # дождаться окончания (в конце — таблица Route (app) и «ƒ (Dynamic)»)
+# Важно: рестартить PM2 только после полного завершения сборки, иначе Next не найдёт .next → 502
+pm2 restart pairly-backend pairly-web
+```
+
+Либо сборка в текущей сессии (на сервере с ~2 GB RAM лучше ограничить память Node):
+
+```bash
+NODE_OPTIONS=--max-old-space-size=1536 npm run build
 pm2 restart pairly-backend pairly-web
 ```
 
@@ -73,6 +83,43 @@ sudo certbot renew --dry-run   # проверить продление SSL
   ```
   Пользователям: жёсткое обновление страницы (Ctrl+Shift+R или Cmd+Shift+R).
 - **Проверка:** `pm2 logs pairly-web --lines 50` — смотреть ошибки в stderr.
+
+## Устранение неполадок
+
+### «socks connection closed» при сборке
+
+Сообщение появляется, если в окружении заданы переменные прокси (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` или `all_proxy` с адресом SOCKS-прокси), а во время сборки Node/npm/Next.js пытаются использовать этот прокси для исходящих запросов (телеметрия, пакеты и т.д.). Если прокси недоступен или соединение обрывается — возникает ошибка.
+
+**Что сделать:**
+- Собирать без прокси: `env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u all_proxy npm run build`
+- Либо использовать фоновую сборку: `npm run build:bg` — скрипт запускает сборку с очищенным окружением и без телеметрии Next.js (`NEXT_TELEMETRY_DISABLED=1`).
+
+### Обрывы соединения при сборке или при работе Cursor с сервером
+
+Возможные причины на сервере (~2 GB RAM в Европе):
+
+1. **Память:** сборка Next.js может кратко занимать 1–1.5 GB. При нехватке RAM ядро (OOM killer) может завершить процессы, в т.ч. сессию SSH или сам сборку — Cursor теряет соединение.
+2. **SSH:** по умолчанию `ClientAliveInterval` в sshd может быть 0 — сервер не шлёт keepalive, длинная пауза или нагрузка приводят к разрыву.
+
+**Что сделать:**
+- **Всегда использовать фоновую сборку:** `npm run build:bg` (в скрипте уже заданы `NODE_OPTIONS=--max-old-space-size=1536` и отключение телеметрии). Сессия не держит сборку — обрыв не убивает сборку.
+- **На своей машине (Cursor/терминал):** включить SSH keepalive, чтобы соединение не рвалось по таймауту. В `~/.ssh/config`:
+  ```
+  Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+  ```
+- **На сервере (по желанию):** в `/etc/ssh/sshd_config` раскомментировать и выставить `ClientAliveInterval 60` и `ClientAliveCountMax 3`, затем `sudo systemctl reload sshd`. Тогда сервер будет слать keepalive раз в минуту.
+
+### Сайт не открывается в браузере
+
+1. **На сервере:** полная пересборка и перезапуск:
+   ```bash
+   cd /root/pairly/web && rm -rf .next && cd /root/pairly && npm run build
+   pm2 restart pairly-web
+   ```
+2. **Проверка с сервера:** `curl -sI https://pairlyapp.ru/` — должен быть `HTTP/1.1 200 OK`.
+3. **У себя:** жёсткое обновление страницы (Ctrl+Shift+R). Проверить с другого устройства/сети. Если за VPN или корпоративным фаерволом — они могут блокировать доступ.
 
 ## Ссылки
 

@@ -8,5 +8,10 @@ cd "$(dirname "$0")/.."
 LOG=.build.log
 
 echo "Сборка запущена, лог: $LOG"
-nohup env -i HOME="$HOME" PATH="$PATH" npm run build >> "$LOG" 2>&1 &
+# Ограничение памяти Node (1.5 GB) — на сервере ~2 GB RAM, иначе сборка может вызвать OOM и обрыв SSH/Cursor.
+# Без прокси и телеметрии, чтобы избежать "socks connection closed" и лишних запросов.
+nohup env -i HOME="$HOME" PATH="$PATH" \
+  NODE_OPTIONS="--max-old-space-size=1536" \
+  NEXT_TELEMETRY_DISABLED=1 \
+  npm run build >> "$LOG" 2>&1 &
 echo "PID: $!. Для проверки: tail -f $LOG"

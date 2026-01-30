@@ -46,6 +46,6 @@ export function getErrorMessage(e: unknown): string {
 export type User = { id: string; email: string; name: string };
 export type Pair = { id: string; code: string; partner: { id: string; email: string; name: string } | null };
 export type MovieSearch = { page: number; results: Array<{ id: number; media_type: 'movie' | 'tv'; title: string; overview: string | null; release_date: string | null; poster_path: string | null; vote_average: number }>; total_pages: number; total_results: number };
-export type MovieDetail = { id: number; media_type?: 'movie' | 'tv'; title: string; overview: string | null; release_date: string | null; poster_path: string | null; poster_path_thumb: string | null; vote_average: number; genres: Array<{ id: number; name: string }>; runtime: number | null; number_of_seasons?: number; number_of_episodes?: number };
+export type MovieDetail = { id: number; media_type?: 'movie' | 'tv'; title: string; overview: string | null; release_date: string | null; poster_path: string | null; poster_path_thumb: string | null; backdrop_path?: string | null; vote_average: number; genres: Array<{ id: number; name: string }>; runtime: number | null; number_of_seasons?: number; number_of_episodes?: number };
 export type WatchlistItem = { movie_id: number; media_type: 'movie' | 'tv'; added_at: string; rating: number | null; watched: boolean; title: string; release_date: string | null; poster_path: string | null };
 export type IntersectionItem = WatchlistItem & { my_rating: number | null; partner_rating: number | null; average_rating: number | null };

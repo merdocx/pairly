@@ -75,6 +75,7 @@ export interface TmdbMovieDetail {
   overview: string | null;
   release_date: string | null;
   poster_path: string | null;
+  backdrop_path?: string | null;
   vote_average: number;
   genres: Array<{ id: number; name: string }>;
   runtime: number | null;
@@ -86,6 +87,7 @@ export interface TmdbTvDetail {
   overview: string | null;
   first_air_date: string | null;
   poster_path: string | null;
+  backdrop_path?: string | null;
   vote_average: number;
   genres: Array<{ id: number; name: string }>;
   number_of_episodes?: number;

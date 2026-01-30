@@ -159,25 +159,23 @@ export default function ProfilePage() {
   return (
     <AppLayout>
       <div className="container">
-        <h1 className="page-title">Профиль</h1>
-
         <div className="profile-card">
           <div className="profile-card-row">
             <div className="profile-avatar">
               <AvatarIcon />
             </div>
             <div>
-              <p style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>{user.name || '—'}</p>
-              <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--muted)' }}>{user.email}</p>
+              <p className="profile-user-name">{user.name || '—'}</p>
+              <p className="profile-user-email">{user.email}</p>
             </div>
           </div>
         </div>
 
         <div className="profile-card">
-          <div className="profile-card-row" style={{ marginBottom: 8 }}>
+          <h2 className="profile-section-title">
             <span style={{ color: 'var(--error)' }}><HeartIcon /></span>
-            <span style={{ fontWeight: 600, fontSize: 16 }}>Статус пары</span>
-          </div>
+            Статус пары
+          </h2>
           {pairError && <p className="error-text" style={{ marginTop: 0 }}>{pairError}</p>}
           {pair === null ? (
             <p className="loading-text" style={{ margin: 0 }}>Загрузка…</p>
@@ -189,35 +187,31 @@ export default function ProfilePage() {
                     <p className="pair-status-label">В паре с</p>
                     <p className="pair-status-name">{pair.pair.partner.name || pair.pair.partner.email}</p>
                   </div>
-                  <button type="button" onClick={handleLeavePair} style={{ marginTop: 12, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
-                    Разорвать пару
+                  <button type="button" onClick={handleLeavePair} className="profile-btn-secondary">
+                    Отвязать
                   </button>
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+                  <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} className="profile-btn-secondary">
                     {pairLoading ? '…' : 'Добавить пару'}
                   </button>
-                  <button type="button" onClick={handleLeavePair} style={{ marginTop: 8, background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--border)', fontSize: 14 }}>
+                  <button type="button" onClick={handleLeavePair} className="profile-btn-secondary">
                     Выйти из пары
                   </button>
                 </>
               )}
             </>
           ) : (
-            <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+            <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} className="profile-btn-secondary">
               {pairLoading ? 'Создание…' : 'Добавить пару'}
             </button>
           )}
         </div>
 
         <div className="profile-card">
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--text)' }}>
-            Фильмов в списке: <strong>{watchlistStats.total}</strong>
-          </p>
-          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text)' }}>
-            Просмотрено фильмов: <strong>{watchlistStats.watched}</strong>
-          </p>
+          <p className="profile-stats">Фильмов в списке: <strong>{watchlistStats.total}</strong></p>
+          <p className="profile-stats">Просмотрено фильмов: <strong>{watchlistStats.watched}</strong></p>
         </div>
 
         <button type="button" onClick={handleLogout} className="btn-leave">
@@ -258,7 +252,7 @@ export default function ProfilePage() {
               />
               <p className="section-desc" style={{ marginTop: 0, marginBottom: 16 }}>Введите 6-значный код вашего партнёра</p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => setAddPairModalOpen(false)} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+                <button type="button" className="btn-rate-secondary" onClick={() => setAddPairModalOpen(false)}>
                   Отмена
                 </button>
                 <button type="submit" disabled={joining || code.length !== 6} className="btn-login-primary" style={{ maxWidth: 'none' }}>

@@ -5,9 +5,9 @@ import { Suspense } from 'react';
 import BottomNav from './BottomNav';
 import { PairlyLogoMark } from './PairlyLogo';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="app-layout">
+    <div className={className ? `app-layout ${className}` : 'app-layout'}>
       <header className="app-header">
         <Link href="/" className="app-header-brand">
           <PairlyLogoMark size={28} className="app-header-logo-icon" />

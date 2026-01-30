@@ -267,11 +267,49 @@ button.btn-danger:hover { filter: brightness(1.1); }
   display: flex;
   flex-direction: column;
 }
+/* Только на главной: фиксированная высота, скролл только у списка фильмов */
+.app-layout.layout-home {
+  height: 100vh;
+  overflow: hidden;
+}
+.app-layout.layout-home .app-header {
+  flex-shrink: 0;
+}
+.app-layout.layout-home .app-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Нижний отступ контента над навбаром — одинаков для всех страниц со списками фильмов */
 .app-content {
   flex: 1;
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
-/* Нижнее меню (Figma: 3 пункта — Что смотреть, Поиск, Профиль; иконка + подпись) */
+/* Главная: шапка и табы закреплены, скроллится только список фильмов */
+.home-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.home-page-sticky {
+  flex-shrink: 0;
+  background: var(--bg);
+  padding-bottom: 4px;
+}
+.home-page-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+/* Нижнее меню (Figma: 3 пункта — Что смотреть, Поиск, Профиль; иконка + подпись, компактная высота) */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -282,8 +320,8 @@ button.btn-danger:hover { filter: brightness(1.1); }
   align-items: stretch;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 0.5rem 0;
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.35rem 0;
+  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
   z-index: 100;
 }
 .bottom-nav a {
@@ -292,9 +330,9 @@ button.btn-danger:hover { filter: brightness(1.1); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0.5rem 0.25rem;
-  font-size: 12px;
+  gap: 2px;
+  padding: 0.35rem 0.2rem;
+  font-size: 11px;
   font-weight: 500;
   color: var(--muted);
   text-decoration: none;
@@ -312,13 +350,13 @@ button.btn-danger:hover { filter: brightness(1.1); }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   color: inherit;
 }
 .bottom-nav-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 .bottom-nav-label {
   line-height: 1.2;
@@ -353,44 +391,43 @@ button.btn-danger:hover { filter: brightness(1.1); }
   color: inherit;
 }
 
-/* Вкладки наверху (Мое / Партнера / Общее) — Figma: 12px, 500/600 */
+/* Вкладки наверху (Моё / Партнёра / Общие) — Figma: сегмент-контроль */
 .films-tabs {
   display: flex;
-  gap: 0;
+  gap: 4px;
   margin-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 8px 8px 0 0;
-  overflow: hidden;
+  padding: 4px;
+  background: var(--bg-alt);
+  border-radius: 10px;
+  border: 1px solid var(--border);
 }
 .films-tabs a,
 .films-tabs button {
   flex: 1;
   text-align: center;
-  padding: 12px 16px;
+  padding: 10px 12px;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
   text-decoration: none;
-  background: none;
+  background: transparent;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
-  border-radius: 0;
   transition: color 0.15s, background 0.15s;
 }
 .films-tabs a:hover,
 .films-tabs button:hover {
   color: var(--text);
-  background: var(--bg);
+  background: var(--surface);
   text-decoration: none;
 }
 .films-tabs a.active,
 .films-tabs button.active {
-  color: var(--accent);
+  color: var(--text);
   font-weight: 600;
-  background: var(--bg);
-  margin-bottom: -1px;
-  border-bottom: 2px solid var(--accent);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* Поиск: поле с лупой (Figma) */
@@ -413,6 +450,41 @@ button.btn-danger:hover { filter: brightness(1.1); }
   font-size: 14px;
 }
 .search-bar-wrapper .search-bar-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* Поиск на всю ширину без кнопки (страница поиска, Figma) */
+.search-bar-full {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.layout-search .home-page-sticky {
+  margin-left: calc(-1 * var(--container-padding));
+  margin-right: calc(-1 * var(--container-padding));
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+  width: calc(100% + 2 * var(--container-padding));
+  box-sizing: border-box;
+}
+.search-bar-full input {
+  width: 100%;
+  padding-left: 40px;
+  padding-right: 12px;
+  background: var(--bg-alt) !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: 44px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.search-bar-full .search-bar-icon {
   position: absolute;
   left: 12px;
   top: 50%;
@@ -445,40 +517,113 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .film-card-body {
   padding: 12px;
 }
+/* Чёткая сетка карточки: название → год → рейтинг → Просмотрено → Удалить. Фиксированные высоты первых трёх строк — кнопки всегда на одной высоте. */
+.film-card-body-grid {
+  display: grid;
+  grid-template-rows: 40px 18px 24px auto auto;
+  grid-template-columns: 1fr;
+  gap: 4px 0;
+  align-items: start;
+}
+.film-card-body-grid .film-card-title {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+}
+/* Название по верхнему краю ячейки: и кнопка (Моё), и ссылка (Партнёра, Общие) */
+.film-card-body-grid .film-card-title .film-card-title-btn,
+.film-card-body-grid .film-card-title > a {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  width: 100%;
+  align-self: flex-start;
+}
+.film-card-body-grid .film-card-year {
+  min-height: 0;
+}
+.film-card-body-grid .film-card-rating-slot {
+  min-height: 0;
+}
 .film-card-title {
   font-weight: 600;
   font-size: 14px;
-  margin: 0 0 4px;
+  margin: 0;
   color: var(--text);
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
+.film-card-poster-btn:hover { opacity: 0.9; }
+.film-card-title-btn:hover { color: var(--accent); text-decoration: underline; }
 .film-card-year {
   font-size: 12px;
   color: var(--muted);
-  margin: 0 0 8px;
+  margin: 0;
+}
+.film-card-rating-slot {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+}
+.film-card-rating-slot--text {
+  font-size: 12px;
+  color: var(--muted);
 }
 .film-card-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-rows: auto auto;
   gap: 8px;
-  align-items: center;
+  align-items: start;
+  min-height: 72px;
+}
+.film-card-actions .btn-watched-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+.film-card-actions .btn-delete-card,
+.film-card-actions .btn-add {
+  justify-self: center;
+}
+.film-card-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.film-card-link {
+  justify-self: center;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+}
+.film-card-link:hover {
+  text-decoration: underline;
 }
 /* Кнопка «+ Добавить» по макету */
 .btn-add {
   background: var(--surface) !important;
   color: var(--text) !important;
-  border: 1px solid var(--border) !important;
+  border: none !important;
   font-size: 14px;
   padding: 8px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.btn-add:hover { border-color: var(--accent) !important; color: var(--accent) !important; background: var(--surface) !important; }
+.btn-add:hover { color: var(--accent) !important; background: var(--surface) !important; }
 .btn-add .plus-icon { color: var(--accent); }
 
 /* Звёзды рейтинга (жёлтые, 1–5) */
@@ -495,7 +640,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .star-rating .star-filled { color: #eab308; }
 .star-rating .star-empty { color: var(--border); }
 
-/* Зелёная кнопка «Просмотрено» (Figma) */
+/* Зелёная кнопка «Просмотрено» (Figma) — только в состоянии «просмотрено» */
 .btn-watched {
   background: #16a34a !important;
   color: white !important;
@@ -504,9 +649,60 @@ button.btn-danger:hover { filter: brightness(1.1); }
   font-weight: 600;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  text-align: center;
 }
 .btn-watched:hover { filter: brightness(1.1); }
+
+/* Серое состояние «Просмотрено» на карточке — ещё не просмотрено, открывает модалку рейтинга */
+.btn-watched-gray {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  cursor: pointer;
+}
+.btn-watched-gray:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* На карточке главной: компактная «Просмотрено» по Figma, текст по центру */
+.btn-watched-card {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  justify-content: center;
+}
+
+/* Кнопка «Удалить» на карточке главной — иконка + текст красного цвета, без заливки и без рамки (по Figma) */
+.btn-delete-card {
+  background: transparent !important;
+  color: var(--error) !important;
+  border: none !important;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-delete-card:hover {
+  color: var(--error) !important;
+  background: rgba(231, 0, 11, 0.06) !important;
+}
+.btn-delete-card svg {
+  flex-shrink: 0;
+  color: inherit;
+}
 
 /* Кнопка «Удалить» — убрать из «Буду смотреть» (главная и детали фильма) */
 .btn-delete {
@@ -566,11 +762,11 @@ button.btn-danger:hover { filter: brightness(1.1); }
   justify-content: center;
 }
 
-/* Карточка профиля (Figma) */
+/* Карточка профиля (Figma: 18px/600 подзаголовки, 16px блоки, 14px подписи) */
 .profile-card {
   background: var(--surface);
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   border: 1px solid var(--border);
   margin-bottom: 16px;
@@ -602,7 +798,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .pair-status-label { font-size: 12px; color: var(--muted); margin: 0 0 4px; }
 .pair-status-name { font-weight: 600; color: var(--text); margin: 0; }
 
-/* Модалка (Figma) */
+/* Модалка (Figma) — поверх всех элементов (хедер, нижнее меню, контент) */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -610,8 +806,9 @@ button.btn-danger:hover { filter: brightness(1.1); }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
-  padding: 16px;
+  z-index: 9999;
+  padding: 48px 16px;
+  overflow: hidden;
 }
 .modal-card {
   background: var(--surface);
@@ -621,6 +818,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   width: 100%;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   position: relative;
+  z-index: 10000;
 }
 .modal-card h2 { margin: 0 0 8px; font-size: 18px; }
 .modal-card .modal-close-x {
@@ -637,6 +835,292 @@ button.btn-danger:hover { filter: brightness(1.1); }
   border-radius: 4px;
 }
 .modal-card .modal-close-x:hover { color: var(--text); }
+
+/* Модалка деталей: верх не выходит за экран, прокручивается только контент внутри */
+.modal-card.modal-card-detail {
+  padding: 0;
+  max-width: 400px;
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-card-detail-scroll {
+  max-height: inherit;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.detail-modal-banner {
+  position: relative;
+  height: 180px;
+  min-height: 180px;
+  flex-shrink: 0;
+  background-color: var(--border);
+  background-size: cover;
+  background-position: center;
+}
+.detail-modal-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 50%);
+  pointer-events: none;
+}
+.detail-modal-close {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+.detail-modal-close:hover {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+.detail-modal-watched-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #16a34a !important;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.detail-modal-banner-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  z-index: 1;
+}
+.detail-modal-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  line-height: 1.25;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.detail-modal-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-right: 6px;
+}
+.detail-modal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.detail-modal-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.95);
+}
+.detail-modal-meta-item svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.detail-modal-body {
+  padding: 20px 24px 24px;
+  background: var(--surface);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.detail-modal-section {
+  margin-bottom: 16px;
+}
+.detail-modal-section-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.detail-modal-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.detail-modal-rating-row .star-rating {
+  flex-shrink: 0;
+}
+.detail-modal-rating-text {
+  font-size: 14px;
+  color: var(--muted);
+}
+.detail-modal-dl {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.detail-modal-dl dt {
+  margin: 0 0 2px;
+  font-weight: 600;
+  color: var(--text);
+}
+.detail-modal-dl dd {
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+.detail-modal-dl dd:last-of-type {
+  margin-bottom: 0;
+}
+.detail-modal-overview {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.tag-added-modal {
+  display: inline-block;
+  margin-bottom: 16px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(152, 16, 250, 0.15);
+  color: var(--accent);
+  border: none;
+}
+.detail-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn-watched-modal {
+  width: 100%;
+  padding: 12px 16px !important;
+  font-size: 15px !important;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-watched-gray.btn-watched-modal {
+  width: 100%;
+  justify-content: center;
+}
+.btn-delete-from-list {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent !important;
+  color: var(--error) !important;
+  border: 1px solid var(--error) !important;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn-delete-from-list:hover {
+  background: rgba(231, 0, 11, 0.06) !important;
+}
+.btn-delete-from-list svg {
+  flex-shrink: 0;
+}
+
+/* Модалка оценки (по Figma: без кнопки «Удалить оценку», размеры из макета) */
+.modal-rate {
+  max-width: 360px;
+  padding: 28px 24px;
+}
+.modal-rate-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+.modal-rate-question {
+  margin: 0 0 24px;
+  font-size: 16px;
+  color: var(--muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.modal-rate-stars {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.modal-rate-stars .star-rating {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0;
+}
+.modal-rate-stars .star-rating button,
+.modal-rate-stars .star-rating span {
+  flex: 1;
+  padding: 8px;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 0;
+}
+.modal-rate-stars .star-rating svg {
+  width: 40px;
+  height: 40px;
+}
+.modal-rate-hint {
+  margin: 0 0 24px;
+  font-size: 16px;
+  color: var(--muted);
+}
+.modal-rate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.modal-rate .btn-rate-secondary {
+  width: 100%;
+  box-sizing: border-box;
+}
+.btn-rate-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-rate-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 /* Код пары в модалке: крупно, фиолетовый фон, копировать */
 .pair-code-display {
