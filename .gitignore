@@ -38,3 +38,6 @@ build/
 # Runtime / deployment (server-specific)
 .pm2/
 .npm/
+
+# Figma export (large JSON, tokens in figma-design-tokens.md)
+design/figma-file.json

@@ -1,19 +1,22 @@
 * {
   box-sizing: border-box;
 }
+/* Figma Pairly Mobile: светлая тема, градиент хедера #990ffb → #e60076 */
 :root {
-  --bg: #0f0f12;
-  --surface: #1a1a1f;
-  --text: #e8e8ed;
-  --muted: #888;
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --border: #2a2a32;
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --accent: #990ffb;
+  --accent-hover: #b43cff;
+  --accent-end: #e60076;
+  --header-gradient: linear-gradient(90deg, #990ffb 0%, #e60076 100%);
+  --border: #e5e7eb;
   --error: #ef4444;
 }
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -159,6 +162,26 @@ input[type="password"] {
 .bottom-nav a.active {
   color: var(--accent);
   font-weight: 600;
+}
+
+/* Хедер с градиентом (Figma) */
+.app-header {
+  background: var(--header-gradient);
+  color: white;
+  padding: 0.75rem 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: -0.02em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.app-header a {
+  color: inherit;
+  text-decoration: none;
+}
+.app-header a:hover {
+  text-decoration: none;
+  opacity: 0.95;
 }
 
 /* Вкладки наверху экрана (Мое / Партнера / Общее) */
