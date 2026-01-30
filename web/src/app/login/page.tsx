@@ -55,7 +55,7 @@ export default function LoginPage() {
       <div className="login-card">
         <div className="login-header">
           <div className="login-logo-wrap">
-            <PairlyLogoWithText size={28} />
+            <PairlyLogoWithText size={30} />
           </div>
           <p className="login-subtitle">Выбор фильмов для совместного просмотра еще никогда не был настолько простым</p>
         </div>

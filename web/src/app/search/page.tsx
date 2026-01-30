@@ -107,7 +107,7 @@ export default function SearchPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Название фильма или сериала…"
+              placeholder="Поиск фильмов..."
               aria-label="Поиск"
             />
           </div>

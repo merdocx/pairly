@@ -66,7 +66,7 @@ function HomePageContent() {
         <div className="films-tabs" role="tablist">
           <Link href="/?tab=me" className={tab === 'me' ? 'active' : ''} role="tab">Моё</Link>
           <Link href="/?tab=partner" className={tab === 'partner' ? 'active' : ''} role="tab">Партнёра</Link>
-          <Link href="/?tab=intersections" className={tab === 'intersections' ? 'active' : ''} role="tab">Общее</Link>
+          <Link href="/?tab=intersections" className={tab === 'intersections' ? 'active' : ''} role="tab">Общие</Link>
         </div>
         <div style={{ display: tab === 'me' ? 'block' : 'none' }}><MyList /></div>
         <div style={{ display: tab === 'partner' ? 'block' : 'none' }}><PartnerList /></div>
@@ -135,7 +135,7 @@ function MyList() {
   return (
     <>
       {items.length === 0 ? (
-        <p className="empty-text">В списке пока нет фильмов. Добавьте из поиска.</p>
+        <p className="empty-text">В вашем списке пока нет фильмов</p>
       ) : (
         <ul className="film-grid">
           {items.map((item) => (

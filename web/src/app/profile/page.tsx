@@ -190,7 +190,7 @@ export default function ProfilePage() {
                     <p className="pair-status-name">{pair.pair.partner.name || pair.pair.partner.email}</p>
                   </div>
                   <button type="button" onClick={handleLeavePair} style={{ marginTop: 12, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
-                    Отвязать
+                    Разорвать пару
                   </button>
                 </>
               ) : (
@@ -213,10 +213,10 @@ export default function ProfilePage() {
 
         <div className="profile-card">
           <p style={{ margin: 0, fontSize: 14, color: 'var(--text)' }}>
-            В списке «Буду смотреть»: <strong>{watchlistStats.total}</strong>
+            Фильмов в списке: <strong>{watchlistStats.total}</strong>
           </p>
           <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text)' }}>
-            Просмотрено: <strong>{watchlistStats.watched}</strong>
+            Просмотрено фильмов: <strong>{watchlistStats.watched}</strong>
           </p>
         </div>
 
@@ -234,17 +234,17 @@ export default function ProfilePage() {
             </button>
             <h2 id="add-pair-title">Добавить пару</h2>
             <p className="section-desc" style={{ marginBottom: 16 }}>
-              Покажите код партнёру или введите его код для связи.
+              Поделитесь своим кодом с партнёром или введите его код для создания пары.
             </p>
             {pairError && <p className="error-text" style={{ marginTop: 0 }}>{pairError}</p>}
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>Ваш код пары</label>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>Ваш код для создания пары</label>
             <div className="pair-code-display">
               <span className="pair-code-value">{pairCode}</span>
               <button type="button" className="btn-copy" onClick={copyPairCode} title="Копировать">
                 <CopyIcon />
               </button>
             </div>
-            <p className="section-desc" style={{ marginTop: 0, marginBottom: 16 }}>Передайте этот код партнёру.</p>
+            <p className="section-desc" style={{ marginTop: 0, marginBottom: 16 }}>Поделитесь этим кодом с вашим партнёром</p>
             <label style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>Код партнёра</label>
             <form onSubmit={handleJoinPair}>
               <input
@@ -256,13 +256,13 @@ export default function ProfilePage() {
                 className="pair-code-input"
                 style={{ width: '100%', maxWidth: 'none', marginBottom: 8 }}
               />
-              <p className="section-desc" style={{ marginTop: 0, marginBottom: 16 }}>Введите 6-значный код от партнёра.</p>
+              <p className="section-desc" style={{ marginTop: 0, marginBottom: 16 }}>Введите 6-значный код вашего партнёра</p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => setAddPairModalOpen(false)} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
                   Отмена
                 </button>
                 <button type="submit" disabled={joining || code.length !== 6} className="btn-login-primary" style={{ maxWidth: 'none' }}>
-                  {joining ? '…' : 'Связать'}
+                  {joining ? '…' : 'Создать пару'}
                 </button>
               </div>
             </form>

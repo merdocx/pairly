@@ -61,7 +61,7 @@ export default function RegisterPage() {
       <div className="register-card">
         <div className="register-header">
           <div className="register-logo-wrap">
-            <PairlyLogoWithText size={28} />
+            <PairlyLogoWithText size={30} />
           </div>
           <p className="register-subtitle">Выбор фильмов для совместного просмотра еще никогда не был настолько простым</p>
         </div>

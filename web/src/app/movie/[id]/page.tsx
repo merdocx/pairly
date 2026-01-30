@@ -234,7 +234,7 @@ export default function MoviePage() {
                     </button>
                   )}
                   <button type="button" className="btn-delete" onClick={removeFromWatchlist}>
-                    Удалить
+                    Удалить из списка
                   </button>
                   {myRating != null && (
                     <button type="button" onClick={unwatch} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
