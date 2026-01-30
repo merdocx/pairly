@@ -94,65 +94,72 @@ export default function SearchPage() {
   return (
     <AppLayout>
       <div className="container">
-        <h1>Поиск фильмов и сериалов</h1>
-      <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Название фильма"
-          style={{ maxWidth: 320 }}
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? 'Поиск…' : 'Искать'}
-        </button>
-      </form>
-      {error && <p style={{ color: 'var(--error)' }}>{error}</p>}
-      {data && (
-        <>
-          {data.total_results > 0 && (
-            <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>Найдено: {data.total_results}</p>
-          )}
-          {data.results.length === 0 && submitted && !loading && (
-            <p style={{ color: 'var(--muted)' }}>Ничего не найдено.</p>
-          )}
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {data.results.map((m) => (
-              <li key={`${m.media_type}-${m.id}`} className="list-row">
-                <PosterImage src={m.poster_path} width={60} height={90} />
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginRight: 6 }}>
-                    {m.media_type === 'tv' ? 'Сериал' : 'Фильм'}
-                  </span>
-                  <Link href={m.media_type === 'tv' ? `/movie/${m.id}?type=tv` : `/movie/${m.id}`} style={{ fontWeight: 500 }}>
-                    {m.title}
-                    {m.release_date && ` (${m.release_date.slice(0, 4)})`}
+        <h1 className="page-title">Поиск фильмов и сериалов</h1>
+        <form onSubmit={handleSubmit} className="search-form">
+          <div className="search-bar-wrapper">
+            <span className="search-bar-icon" aria-hidden>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Название фильма или сериала…"
+              aria-label="Поиск"
+            />
+          </div>
+          <button type="submit" disabled={loading} className="btn-login-primary" style={{ maxWidth: 120 }}>
+            {loading ? '…' : 'Искать'}
+          </button>
+        </form>
+        {error && <p className="error-text">{error}</p>}
+        {data && (
+          <>
+            {data.total_results > 0 && (
+              <p className="section-desc" style={{ marginBottom: 12 }}>Найдено: {data.total_results}</p>
+            )}
+            {data.results.length === 0 && submitted && !loading && (
+              <p className="empty-text">Ничего не найдено.</p>
+            )}
+            <ul className="film-grid">
+              {data.results.map((m) => (
+                <li key={`${m.media_type}-${m.id}`} className="film-card">
+                  <Link href={m.media_type === 'tv' ? `/movie/${m.id}?type=tv` : `/movie/${m.id}`} style={{ display: 'block', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)' }}>
+                    <PosterImage src={m.poster_path} width={240} height={360} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </Link>
-                  {m.overview && (
-                    <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--muted)', maxWidth: 500 }}>
-                      {m.overview.slice(0, 120)}…
-                    </p>
-                  )}
-                </div>
-                {inWatchlist(m.id, m.media_type) ? (
-                  <button type="button" onClick={() => removeFromWatchlist(m.id, m.media_type)} disabled={removingId === m.id}>
-                    {removingId === m.id ? '…' : 'Удалить'}
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => addToWatchlist(m.id, m.media_type)} disabled={addingId === m.id}>
-                    {addingId === m.id ? '…' : 'В список'}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-          {data.results.length > 0 && data.page < data.total_pages && (
-            <button type="button" onClick={loadMore} disabled={loading} style={{ marginTop: '1rem' }}>
-              Загрузить ещё
-            </button>
-          )}
-        </>
-      )}
+                  <div className="film-card-body">
+                    <h3 className="film-card-title">
+                      <Link href={m.media_type === 'tv' ? `/movie/${m.id}?type=tv` : `/movie/${m.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                        {m.title}
+                      </Link>
+                    </h3>
+                    <p className="film-card-year">{m.release_date ? m.release_date.slice(0, 4) : '—'}</p>
+                    <div className="film-card-actions">
+                      {inWatchlist(m.id, m.media_type) ? (
+                        <button type="button" onClick={() => removeFromWatchlist(m.id, m.media_type)} disabled={removingId === m.id} style={{ background: 'var(--error)', color: 'white', fontSize: 12, padding: '6px 10px' }}>
+                          {removingId === m.id ? '…' : 'Удалить'}
+                        </button>
+                      ) : (
+                        <button type="button" className="btn-add" onClick={() => addToWatchlist(m.id, m.media_type)} disabled={addingId === m.id}>
+                          <span className="plus-icon" aria-hidden>+</span>
+                          {addingId === m.id ? '…' : 'Добавить'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {data.results.length > 0 && data.page < data.total_pages && (
+              <button type="button" onClick={loadMore} disabled={loading} className="load-more-btn">
+                Загрузить ещё
+              </button>
+            )}
+          </>
+        )}
       </div>
     </AppLayout>
   );

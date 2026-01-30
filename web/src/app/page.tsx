@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import type { WatchlistItem, IntersectionItem } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
 import { PosterImage } from '@/components/PosterImage';
+import { StarRatingDisplay } from '@/components/StarRating';
 
 type FilmsTab = 'me' | 'partner' | 'intersections';
 
@@ -61,6 +62,12 @@ function HomePageContent() {
   return (
     <AppLayout>
       <div className="container">
+        <h1 className="page-title">Что смотреть</h1>
+        <div className="films-tabs" role="tablist">
+          <Link href="/?tab=me" className={tab === 'me' ? 'active' : ''} role="tab">Моё</Link>
+          <Link href="/?tab=partner" className={tab === 'partner' ? 'active' : ''} role="tab">Партнёра</Link>
+          <Link href="/?tab=intersections" className={tab === 'intersections' ? 'active' : ''} role="tab">Общее</Link>
+        </div>
         <div style={{ display: tab === 'me' ? 'block' : 'none' }}><MyList /></div>
         <div style={{ display: tab === 'partner' ? 'block' : 'none' }}><PartnerList /></div>
         <div style={{ display: tab === 'intersections' ? 'block' : 'none' }}><IntersectionsList /></div>
@@ -80,15 +87,14 @@ export default function HomePage() {
 function MyList() {
   const router = useRouter();
   const [items, setItems] = useState<WatchlistItem[]>([]);
-  const [sort, setSort] = useState<'added_at' | 'rating' | 'title'>('added_at');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api<{ items: WatchlistItem[] }>(`/api/watchlist/me?sort=${sort}`)
+    api<{ items: WatchlistItem[] }>('/api/watchlist/me')
       .then((r) => setItems(r.items))
       .catch(() => router.replace('/login'))
       .finally(() => setLoading(false));
-  }, [sort, router]);
+  }, [router]);
 
   async function removeFromList(movieId: number, mediaType: 'movie' | 'tv') {
     try {
@@ -124,71 +130,53 @@ function MyList() {
     }
   }
 
-  if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка…</p>;
+  if (loading) return <p className="loading-text">Загрузка…</p>;
 
   return (
     <>
-      <p style={{ color: 'var(--muted)', marginBottom: '1rem' }} className="sort-buttons">
-        Сортировка:{' '}
-        <button type="button" onClick={() => setSort('added_at')} className={sort === 'added_at' ? 'active' : ''}>
-          по дате
-        </button>
-        <button type="button" onClick={() => setSort('title')} className={sort === 'title' ? 'active' : ''}>
-          по названию
-        </button>
-        <button type="button" onClick={() => setSort('rating')} className={sort === 'rating' ? 'active' : ''}>
-          по рейтингу
-        </button>
-      </p>
       {items.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>Список пуст. Добавьте фильмы и сериалы из поиска.</p>
+        <p className="empty-text">В списке пока нет фильмов. Добавьте из поиска.</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul className="film-grid">
           {items.map((item) => (
-            <li key={`${item.media_type}-${item.movie_id}`} className="list-row" style={{ opacity: item.watched ? 0.8 : 1 }}>
-              <PosterImage src={item.poster_path} width={60} height={90} />
-              <div style={{ flex: 1 }}>
-                <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
-                  {item.title}
-                  {item.release_date && ` (${String(item.release_date).slice(0, 4)})`}
-                </Link>
-                {item.watched && (
-                  <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: '0.9rem' }}>
-                    Просмотрено {item.rating != null && `★ ${item.rating}`}
-                  </span>
+            <li key={`${item.media_type}-${item.movie_id}`} className="film-card" style={{ opacity: item.watched ? 0.9 : 1 }}>
+              <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ display: 'block', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)' }}>
+                <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </Link>
+              <div className="film-card-body">
+                <h3 className="film-card-title">
+                  <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
+                </h3>
+                <p className="film-card-year">{item.release_date ? String(item.release_date).slice(0, 4) : '—'}</p>
+                {item.watched && item.rating != null && (
+                  <div style={{ marginBottom: 8 }}>
+                    <StarRatingDisplay value={item.rating} />
+                    <span style={{ marginLeft: 6, fontSize: 12, color: 'var(--muted)' }}>{Math.round(item.rating / 2)}/5</span>
+                  </div>
                 )}
-              </div>
-              {item.watched ? (
-                <div>
-                  <select
-                    value={item.rating ?? ''}
-                    onChange={(e) => setRating(item.movie_id, item.media_type, Number(e.target.value))}
-                    style={{ marginRight: 8, padding: 4, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                  <button type="button" onClick={() => unwatch(item.movie_id, item.media_type)} style={{ fontSize: '0.85rem', padding: '4px 8px' }}>
-                    Снять «Просмотрено»
+                <div className="film-card-actions">
+                  {item.watched ? (
+                    <>
+                      <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} className="btn-watched" style={{ textDecoration: 'none', fontSize: 12, padding: '6px 10px' }}>
+                        ✓ Просмотрено
+                      </Link>
+                      <button type="button" onClick={() => unwatch(item.movie_id, item.media_type)} style={{ background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--border)', fontSize: 12, padding: '6px 10px' }}>
+                        Снять
+                      </button>
+                    </>
+                  ) : (
+                    <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} className="btn-mark-watched" style={{ textDecoration: 'none', fontSize: 12 }}>
+                      <span className="check-icon" style={{ color: '#16a34a' }}>✓</span>
+                      Отметить просмотренным
+                    </Link>
+                  )}
+                  <button type="button" className="btn-delete" onClick={() => removeFromList(item.movie_id, item.media_type)}>
+                    Удалить
                   </button>
                 </div>
-              ) : (
-                <div>
-                  <select
-                    onChange={(e) => setRating(item.movie_id, item.media_type, Number(e.target.value))}
-                    style={{ marginRight: 8, padding: 4, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}
-                  >
-                    <option value="">Оценить</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <option key={n} value={n}>★ {n}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <button type="button" onClick={() => removeFromList(item.movie_id, item.media_type)} style={{ background: 'var(--error)', fontSize: '0.85rem' }}>
-                Удалить
-              </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -213,22 +201,26 @@ function PartnerList() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка…</p>;
-  if (error) return <p style={{ color: 'var(--error)' }}>{error}</p>;
-  if (items.length === 0) return <p style={{ color: 'var(--muted)' }}>Нет фильмов и сериалов или все просмотрены партнёром.</p>;
+  if (loading) return <p className="loading-text">Загрузка…</p>;
+  if (error) return <p className="error-text">{error}</p>;
+  if (items.length === 0) return <p className="empty-text">Нет фильмов и сериалов или все просмотрены партнёром.</p>;
 
   return (
     <>
-      <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>Только непросмотренные партнёром.</p>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <p className="section-desc" style={{ marginBottom: 12 }}>Только непросмотренные партнёром.</p>
+      <ul className="film-grid">
         {items.map((item) => (
-          <li key={`${item.media_type}-${item.movie_id}`} className="list-row">
-            <PosterImage src={item.poster_path} width={60} height={90} />
-            <div>
-              <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
-                {item.title}
-                {item.release_date && ` (${String(item.release_date).slice(0, 4)})`}
-              </Link>
+          <li key={`${item.media_type}-${item.movie_id}`} className="film-card">
+            <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ display: 'block', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)' }}>
+              <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </Link>
+            <div className="film-card-body">
+              <h3 className="film-card-title">
+                <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {item.title}
+                </Link>
+              </h3>
+              <p className="film-card-year">{item.release_date ? String(item.release_date).slice(0, 4) : '—'}</p>
             </div>
           </li>
         ))}
@@ -271,43 +263,48 @@ function IntersectionsList() {
     }
   }
 
-  if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка…</p>;
-  if (error) return <p style={{ color: 'var(--error)' }}>{error}</p>;
-  if (items.length === 0) return <p style={{ color: 'var(--muted)' }}>Нет пересечений. Добавьте одинаковые фильмы или сериалы в свои списки.</p>;
+  if (loading) return <p className="loading-text">Загрузка…</p>;
+  if (error) return <p className="error-text">{error}</p>;
+  if (items.length === 0) return <p className="empty-text">Нет пересечений. Добавьте одинаковые фильмы или сериалы в свои списки.</p>;
 
   return (
     <>
-      <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>
+      <p className="section-desc" style={{ marginBottom: 12 }}>
         Фильмы и сериалы, которые вы оба добавили и ещё не просмотрели.
       </p>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <ul className="film-grid">
         {items.map((item) => (
-          <li key={`${item.media_type}-${item.movie_id}`} className="list-row">
-            <PosterImage src={item.poster_path} width={60} height={90} />
-            <div style={{ flex: 1 }}>
-              <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
-                {item.title}
-                {item.release_date && ` (${String(item.release_date).slice(0, 4)})`}
-              </Link>
-              <div style={{ marginTop: 4, fontSize: '0.9rem', color: 'var(--muted)' }}>
-                {item.my_rating != null && `Ваша оценка: ★ ${item.my_rating}`}
-                {item.partner_rating != null && ` · Партнёр: ★ ${item.partner_rating}`}
-                {item.average_rating != null && ` · Средняя: ${item.average_rating}`}
+          <li key={`${item.media_type}-${item.movie_id}`} className="film-card">
+            <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ display: 'block', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)' }}>
+              <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </Link>
+            <div className="film-card-body">
+              <h3 className="film-card-title">
+                <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {item.title}
+                </Link>
+              </h3>
+              <p className="film-card-year">{item.release_date ? String(item.release_date).slice(0, 4) : '—'}</p>
+              <div style={{ marginTop: 4, fontSize: 12, color: 'var(--muted)' }}>
+                {item.my_rating != null && `Вы: ${Math.round(item.my_rating / 2)}/5`}
+                {item.partner_rating != null && ` · Партнёр: ${Math.round(item.partner_rating / 2)}/5`}
+              </div>
+              <div className="film-card-actions" style={{ marginTop: 8 }}>
+                <select
+                  value={item.my_rating ?? ''}
+                  onChange={(e) => setRating(item.movie_id, item.media_type, Number(e.target.value))}
+                  style={{ padding: '6px 8px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
+                >
+                  <option value="">Оценить</option>
+                  {[2, 4, 6, 8, 10].map((n) => (
+                    <option key={n} value={n}>{n / 2}/5</option>
+                  ))}
+                </select>
+                <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ fontSize: 12, color: 'var(--accent)' }}>
+                  Карточка
+                </Link>
               </div>
             </div>
-            <div>
-              <select
-                value={item.my_rating ?? ''}
-                onChange={(e) => setRating(item.movie_id, item.media_type, Number(e.target.value))}
-                style={{ padding: 4, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6 }}
-              >
-                <option value="">Оценить</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                  <option key={n} value={n}>★ {n}</option>
-                ))}
-              </select>
-            </div>
-            <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`}>Карточка</Link>
           </li>
         ))}
       </ul>

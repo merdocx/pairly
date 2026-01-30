@@ -46,6 +46,17 @@ sudo certbot renew --dry-run   # проверить продление SSL
 - **Переменные:** `/root/pairly/.env` и `/root/pairly/backend/.env` (должны совпадать по содержимому для backend)
 - **JWT_SECRET:** уже сгенерирован и прописан в `.env` (не публиковать)
 
+## Белая страница / ошибки после деплоя
+
+- **Backend за Nginx:** в `backend/src/app.ts` включён `app.set('trust proxy', 1)`, чтобы rate-limit и логи не падали из‑за заголовка `X-Forwarded-For`.
+- **Next.js «Failed to find Server Action»:** часто из‑за устаревшего кэша. На сервере:
+  ```bash
+  cd /root/pairly/web && rm -rf .next && npm run build
+  pm2 restart pairly-web
+  ```
+  Пользователям: жёсткое обновление страницы (Ctrl+Shift+R или Cmd+Shift+R).
+- **Проверка:** `pm2 logs pairly-web --lines 50` — смотреть ошибки в stderr.
+
 ## Ссылки
 
 - Сайт: https://pairlyapp.ru и https://www.pairlyapp.ru

@@ -12,6 +12,9 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 export const app = express();
 
+// За Nginx: доверять X-Forwarded-For для rate-limit и корректного IP
+app.set('trust proxy', 1);
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },

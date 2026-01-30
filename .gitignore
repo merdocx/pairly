@@ -39,5 +39,7 @@ build/
 .pm2/
 .npm/
 
-# Figma export (large JSON, tokens in figma-design-tokens.md)
+# Figma export (large JSON; токены в figma-design-tokens.md)
 design/figma-file.json
+design/figma-export.json
+design/figma-texts.json
