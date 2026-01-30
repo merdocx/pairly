@@ -6,20 +6,14 @@ import { api } from '@/lib/api';
 import type { User, Pair } from '@/lib/api';
 import type { WatchlistItem } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
+import { useToast } from '@/components/Toast';
 
 function AvatarIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   );
 }
@@ -54,7 +48,11 @@ export default function ProfilePage() {
   const [pairLoading, setPairLoading] = useState(false);
   const [joining, setJoining] = useState(false);
   const [addPairModalOpen, setAddPairModalOpen] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [justCreatedCode, setJustCreatedCode] = useState<string | null>(null);
+  const addPairModalAnim = useModalAnimation(addPairModalOpen, () => setAddPairModalOpen(false));
+  const leaveConfirmAnim = useModalAnimation(leaveConfirmOpen, () => setLeaveConfirmOpen(false));
+  const { showToast } = useToast();
 
   useEffect(() => {
     api<User>('/api/auth/me')
@@ -147,7 +145,7 @@ export default function ProfilePage() {
   function copyPairCode() {
     const c = pair?.pair?.code || justCreatedCode;
     if (c) {
-      navigator.clipboard.writeText(c).then(() => alert('Код скопирован'));
+      navigator.clipboard.writeText(c).then(() => showToast('Код скопирован'));
     }
   }
 
@@ -157,7 +155,7 @@ export default function ProfilePage() {
   const pairCode = pair?.pair?.code || justCreatedCode;
 
   return (
-    <AppLayout>
+    <AppLayout className="layout-profile">
       <div className="container">
         <div className="profile-card">
           <div className="profile-card-row">
@@ -172,10 +170,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="profile-card">
-          <h2 className="profile-section-title">
-            <span style={{ color: 'var(--error)' }}><HeartIcon /></span>
-            Статус пары
-          </h2>
+          <h2 className="profile-section-title">Статус пары</h2>
           {pairError && <p className="error-text" style={{ marginTop: 0 }}>{pairError}</p>}
           {pair === null ? (
             <p className="loading-text" style={{ margin: 0 }}>Загрузка…</p>
@@ -192,14 +187,9 @@ export default function ProfilePage() {
                   </button>
                 </>
               ) : (
-                <>
-                  <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} className="profile-btn-secondary">
-                    {pairLoading ? '…' : 'Добавить пару'}
-                  </button>
-                  <button type="button" onClick={handleLeavePair} className="profile-btn-secondary">
-                    Выйти из пары
-                  </button>
-                </>
+                <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} className="profile-btn-secondary">
+                  {pairLoading ? '…' : 'Добавить пару'}
+                </button>
               )}
             </>
           ) : (
@@ -220,12 +210,37 @@ export default function ProfilePage() {
         </button>
       </div>
 
+      {leaveConfirmOpen && (
+        <div
+          className={`modal-overlay ${leaveConfirmAnim.open ? 'modal-overlay--open' : ''} ${leaveConfirmAnim.closing ? 'modal-overlay--closing' : ''}`}
+          onClick={leaveConfirmAnim.requestClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="leave-confirm-title"
+        >
+          <div className={`modal-card ${leaveConfirmAnim.open ? 'modal-card--open' : ''} ${leaveConfirmAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <h2 id="leave-confirm-title" className="profile-section-title" style={{ marginBottom: 16 }}>Выйти из пары?</h2>
+            <div className="modal-add-pair-actions">
+              <button type="button" className="btn-rate-secondary btn-rate-secondary-full" onClick={leaveConfirmAnim.requestClose}>
+                Отмена
+              </button>
+              <button type="button" className="btn-login-primary btn-login-primary-full" style={{ background: 'var(--error)' }} onClick={doLeavePair}>
+                Выйти из пары
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {addPairModalOpen && (
-        <div className="modal-overlay" onClick={() => setAddPairModalOpen(false)} role="dialog" aria-modal="true" aria-labelledby="add-pair-title">
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="modal-close-x" onClick={() => setAddPairModalOpen(false)} aria-label="Закрыть">
-              ×
-            </button>
+        <div
+          className={`modal-overlay ${addPairModalAnim.open ? 'modal-overlay--open' : ''} ${addPairModalAnim.closing ? 'modal-overlay--closing' : ''}`}
+          onClick={addPairModalAnim.requestClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-pair-title"
+        >
+          <div className={`modal-card ${addPairModalAnim.open ? 'modal-card--open' : ''} ${addPairModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
             <h2 id="add-pair-title">Добавить пару</h2>
             <p className="section-desc" style={{ marginBottom: 16 }}>
               Поделитесь своим кодом с партнёром или введите его код для создания пары.
@@ -251,11 +266,11 @@ export default function ProfilePage() {
                 style={{ width: '100%', maxWidth: 'none', marginBottom: 8 }}
               />
               <p className="section-desc" style={{ marginTop: 0, marginBottom: 16 }}>Введите 6-значный код вашего партнёра</p>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button type="button" className="btn-rate-secondary" onClick={() => setAddPairModalOpen(false)}>
+              <div className="modal-add-pair-actions">
+                <button type="button" className="btn-rate-secondary btn-rate-secondary-full" onClick={addPairModalAnim.requestClose}>
                   Отмена
                 </button>
-                <button type="submit" disabled={joining || code.length !== 6} className="btn-login-primary" style={{ maxWidth: 'none' }}>
+                <button type="submit" disabled={joining || code.length !== 6} className="btn-login-primary btn-login-primary-full">
                   {joining ? '…' : 'Создать пару'}
                 </button>
               </div>

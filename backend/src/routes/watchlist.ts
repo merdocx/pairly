@@ -1,9 +1,12 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
+import pLimit from 'p-limit';
 import { z } from 'zod';
 import { getPool } from '../db/pool.js';
 import { authMiddleware, type JwtPayload } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { getMovieDetail, getTvDetail, getConfiguration, posterPath } from '../services/tmdb.js';
+
+const tmdbConcurrency = pLimit(10);
 
 type MediaType = 'movie' | 'tv';
 
@@ -61,7 +64,7 @@ watchlistRouter.get('/me', async (req, res, next) => {
             overview: r.w_overview ?? null,
           };
         }
-        const d = await getDetail(r.movie_id, r.media_type).catch(() => null);
+        const d = await tmdbConcurrency(() => getDetail(r.movie_id, r.media_type)).catch(() => null);
         const denorm = detailToDenorm(d, r.media_type);
         return {
           movie_id: r.movie_id,
@@ -174,7 +177,7 @@ watchlistRouter.get('/intersections', async (req, res, next) => {
             average_rating: null,
           };
         }
-        const d = await getDetail(r.movie_id, r.media_type).catch(() => null);
+        const d = await tmdbConcurrency(() => getDetail(r.movie_id, r.media_type)).catch(() => null);
         const denorm = detailToDenorm(d, r.media_type);
         return {
           movie_id: r.movie_id,

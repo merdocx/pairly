@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import { z } from 'zod';
 import { getPool } from '../db/pool.js';
 import { authMiddleware, type JwtPayload } from '../middleware/auth.js';

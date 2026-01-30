@@ -4,39 +4,14 @@ import { useEffect, useState, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, getErrorMessage } from '@/lib/api';
 import type { WatchlistItem, IntersectionItem, MovieDetail } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { CheckIcon, CalendarIconSmall, ClockIconSmall } from '@/components/Icons';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { PosterImage } from '@/components/PosterImage';
 import { StarRatingDisplay, StarRatingInput } from '@/components/StarRating';
-
-function CheckIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function CalendarIconSmall() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function ClockIconSmall() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
+import { useToast } from '@/components/Toast';
 
 type FilmsTab = 'me' | 'partner' | 'intersections';
 
@@ -44,7 +19,7 @@ function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = (searchParams.get('tab') as FilmsTab) || 'me';
-
+  const { showToast } = useToast();
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -55,11 +30,12 @@ function HomePageContent() {
     }
     api('/api/auth/me')
       .then(() => setAuthed(true))
-      .catch(() => {
+      .catch((e) => {
+        showToast(getErrorMessage(e));
         localStorage.removeItem('token');
         setAuthed(false);
       });
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     if (authed === false) {
@@ -118,6 +94,8 @@ function MyList() {
   const [rateModalItem, setRateModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv'; title: string } | null>(null);
   const [detailModalItem, setDetailModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [detailMovie, setDetailMovie] = useState<MovieDetail | null>(null);
+  const rateModalAnim = useModalAnimation(!!rateModalItem, () => setRateModalItem(null));
+  const detailModalAnim = useModalAnimation(!!(detailModalItem && detailMovie), () => setDetailModalItem(null));
 
   useEffect(() => {
     if (!detailModalItem) {
@@ -145,12 +123,14 @@ function MyList() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  const { showToast } = useToast();
+
   async function removeFromList(movieId: number, mediaType: 'movie' | 'tv') {
     try {
       await api(`/api/watchlist/me/${movieId}?type=${mediaType}`, { method: 'DELETE' });
       setItems((prev) => prev.filter((i) => !(i.movie_id === movieId && i.media_type === mediaType)));
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -164,7 +144,7 @@ function MyList() {
         prev.map((i) => (i.movie_id === movieId && i.media_type === mediaType ? { ...i, rating, watched: true } : i))
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -175,7 +155,7 @@ function MyList() {
         prev.map((i) => (i.movie_id === movieId && i.media_type === mediaType ? { ...i, rating: null, watched: false } : i))
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -253,11 +233,14 @@ function MyList() {
           const currentRating = currentItem?.rating ?? null;
           const displayStars = currentRating != null ? Math.round(currentRating / 2) : 0;
           return (
-          <div className="modal-overlay" onClick={() => setRateModalItem(null)} role="dialog" aria-modal="true" aria-labelledby="rate-movie-title">
-            <div className="modal-card modal-rate" onClick={(e) => e.stopPropagation()}>
-              <button type="button" className="modal-close-x" onClick={() => setRateModalItem(null)} aria-label="Закрыть">
-                ×
-              </button>
+          <div
+            className={`modal-overlay ${rateModalAnim.open ? 'modal-overlay--open' : ''} ${rateModalAnim.closing ? 'modal-overlay--closing' : ''}`}
+            onClick={rateModalAnim.requestClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rate-movie-title"
+          >
+            <div className={`modal-card modal-rate ${rateModalAnim.open ? 'modal-card--open' : ''} ${rateModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
               <h2 id="rate-movie-title" className="modal-rate-title">Оценить фильм</h2>
               <p className="modal-rate-question">
                 Как бы вы оценили «{rateModalItem.title}»?
@@ -275,7 +258,7 @@ function MyList() {
                 {displayStars > 0 ? `${displayStars} из 5` : 'Выберите оценку'}
               </p>
               <div className="modal-rate-actions">
-                <button type="button" className="btn-rate-secondary" onClick={() => setRateModalItem(null)}>
+                <button type="button" className="btn-rate-secondary" onClick={rateModalAnim.requestClose}>
                   Отмена
                 </button>
               </div>
@@ -297,13 +280,19 @@ function MyList() {
             : null;
           const bannerImage = detailMovie.backdrop_path || detailMovie.poster_path || detailMovie.poster_path_thumb;
           return (
-          <div className="modal-overlay" onClick={() => setDetailModalItem(null)} role="dialog" aria-modal="true" aria-labelledby="detail-movie-title">
-            <div className="modal-card modal-card-detail modal-card-detail-scroll" onClick={(e) => e.stopPropagation()}>
+          <div
+            className={`modal-overlay ${detailModalAnim.open ? 'modal-overlay--open' : ''} ${detailModalAnim.closing ? 'modal-overlay--closing' : ''}`}
+            onClick={detailModalAnim.requestClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="detail-movie-title"
+          >
+            <div className={`modal-card modal-card-detail modal-card-detail-scroll ${detailModalAnim.open ? 'modal-card--open' : ''} ${detailModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div
                 className="detail-modal-banner"
                 style={{ backgroundImage: bannerImage ? `url(${bannerImage})` : undefined }}
               >
-                <button type="button" className="detail-modal-close" onClick={() => setDetailModalItem(null)} aria-label="Закрыть">
+                <button type="button" className="detail-modal-close" onClick={detailModalAnim.requestClose} aria-label="Закрыть">
                   ×
                 </button>
                 {item.watched && (
@@ -379,7 +368,7 @@ function MyList() {
                   <button
                     type="button"
                     className="btn-delete-from-list"
-                    onClick={() => { removeFromList(item.movie_id, item.media_type); setDetailModalItem(null); }}
+                    onClick={() => { removeFromList(item.movie_id, item.media_type); detailModalAnim.requestClose(); }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <polyline points="3 6 5 6 21 6" />
@@ -387,7 +376,7 @@ function MyList() {
                       <line x1="10" y1="11" x2="10" y2="17" />
                       <line x1="14" y1="11" x2="14" y2="17" />
                     </svg>
-                    Удалить из списка
+                    Удалить
                   </button>
                 </div>
               </div>
@@ -451,6 +440,7 @@ function PartnerList() {
 
 function IntersectionsList() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [items, setItems] = useState<IntersectionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -479,7 +469,7 @@ function IntersectionsList() {
         )
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 

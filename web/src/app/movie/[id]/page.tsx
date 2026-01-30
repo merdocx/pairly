@@ -6,36 +6,11 @@ import Link from 'next/link';
 import { api, getErrorMessage } from '@/lib/api';
 import type { MovieDetail } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { CheckIcon, CalendarIcon, ClockIcon } from '@/components/Icons';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { PosterImage } from '@/components/PosterImage';
 import { StarRatingDisplay, StarRatingInput } from '@/components/StarRating';
-
-function CalendarIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
+import { useToast } from '@/components/Toast';
 
 export default function MoviePage() {
   const router = useRouter();
@@ -50,6 +25,8 @@ export default function MoviePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [rateModalOpen, setRateModalOpen] = useState(false);
+  const rateModalAnim = useModalAnimation(rateModalOpen, () => setRateModalOpen(false));
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!Number.isInteger(id) || id < 1) {
@@ -93,7 +70,7 @@ export default function MoviePage() {
       });
       setInWatchlist(true);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -103,7 +80,7 @@ export default function MoviePage() {
       setInWatchlist(false);
       setMyRating(null);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -115,7 +92,7 @@ export default function MoviePage() {
       });
       setMyRating(rating);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -124,7 +101,7 @@ export default function MoviePage() {
       await api(`/api/watchlist/me/${id}/rate?type=${mediaType}`, { method: 'DELETE' });
       setMyRating(null);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -224,12 +201,12 @@ export default function MoviePage() {
                 <>
                   {myRating != null ? (
                     <button type="button" className="btn-watched" onClick={() => setRateModalOpen(true)}>
-                      <CheckIcon />
+                      <CheckIcon size={20} />
                       Просмотрено
                     </button>
                   ) : (
                     <button type="button" className="btn-mark-watched" onClick={() => setRateModalOpen(true)}>
-                      <span className="check-icon"><CheckIcon /></span>
+                      <span className="check-icon"><CheckIcon size={20} /></span>
                       Отметить просмотренным
                     </button>
                   )}
@@ -249,11 +226,14 @@ export default function MoviePage() {
       </div>
 
       {rateModalOpen && (
-        <div className="modal-overlay" onClick={() => setRateModalOpen(false)} role="dialog" aria-modal="true" aria-labelledby="rate-movie-title">
-          <div className="modal-card modal-rate" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="modal-close-x" onClick={() => setRateModalOpen(false)} aria-label="Закрыть">
-              ×
-            </button>
+        <div
+          className={`modal-overlay ${rateModalAnim.open ? 'modal-overlay--open' : ''} ${rateModalAnim.closing ? 'modal-overlay--closing' : ''}`}
+          onClick={rateModalAnim.requestClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rate-movie-title"
+        >
+          <div className={`modal-card modal-rate ${rateModalAnim.open ? 'modal-card--open' : ''} ${rateModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
             <h2 id="rate-movie-title" className="modal-rate-title">Оценить {movie.media_type === 'tv' ? 'сериал' : 'фильм'}</h2>
             <p className="modal-rate-question">
               Как бы вы оценили «{movie.title}»?
@@ -271,7 +251,7 @@ export default function MoviePage() {
               {displayRating > 0 ? `${displayRating} из 5` : 'Выберите оценку'}
             </p>
             <div className="modal-rate-actions">
-              <button type="button" className="btn-rate-secondary" onClick={() => setRateModalOpen(false)}>
+              <button type="button" className="btn-rate-secondary" onClick={rateModalAnim.requestClose}>
                 Отмена
               </button>
             </div>

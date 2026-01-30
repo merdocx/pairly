@@ -26,6 +26,32 @@ body {
   color: var(--text);
   min-height: 100vh;
 }
+.page-transition-wrapper {
+  animation: page-fade-in 0.2s ease;
+}
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.toast-message {
+  position: fixed;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  padding: 12px 20px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 10001;
+  animation: toast-in 0.2s ease;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
 a {
   color: var(--accent);
   text-decoration: none;
@@ -200,8 +226,15 @@ button.btn-danger:hover { filter: brightness(1.1); }
   margin: 0 auto;
   padding: var(--container-padding);
 }
+/* Профиль: та же ширина, что и «окно» модалки — экран минус 32px (16px×2) */
 .layout-profile .container {
-  max-width: 560px;
+  width: 100vw;
+  max-width: none;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  padding-left: 16px;
+  padding-right: 16px;
+  box-sizing: border-box;
 }
 .loading-text,
 .empty-text {
@@ -469,25 +502,28 @@ button.btn-danger:hover { filter: brightness(1.1); }
   width: 100%;
 }
 .layout-search .container { max-width: 560px; }
+/* Строка поиска: как модалка — чуть уже экрана (100vw − 32px), макс 400px, ширина не меняется при вводе */
 .layout-search .home-page-sticky {
-  margin-left: calc(-1 * var(--container-padding));
-  margin-right: calc(-1 * var(--container-padding));
-  padding-left: var(--container-padding);
-  padding-right: var(--container-padding);
-  width: calc(100% + 2 * var(--container-padding));
-  min-width: 320px;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(400px, calc(100vw - 32px));
+  min-width: min(400px, calc(100vw - 32px));
+  max-width: min(400px, calc(100vw - 32px));
+  padding-left: 16px;
+  padding-right: 16px;
   box-sizing: border-box;
 }
 .search-bar-full input {
   width: 100%;
-  min-width: 280px;
+  min-width: 0;
   padding-left: 40px;
   padding-right: 12px;
   background: var(--bg-alt) !important;
   border: 1px solid var(--border);
   border-radius: 8px;
   height: 44px;
-  font-size: 14px;
+  font-size: 16px; /* не менее 16px — иначе iOS при фокусе зумит страницу */
   box-sizing: border-box;
 }
 .search-bar-full .search-bar-icon {
@@ -815,7 +851,11 @@ button.btn-danger:hover { filter: brightness(1.1); }
   z-index: 9999;
   padding: 48px 16px;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
+.modal-overlay.modal-overlay--open { opacity: 1; }
+.modal-overlay.modal-overlay--closing { opacity: 0; }
 .modal-card {
   background: var(--surface);
   border-radius: 12px;
@@ -825,7 +865,12 @@ button.btn-danger:hover { filter: brightness(1.1); }
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   position: relative;
   z-index: 10000;
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
+.modal-card.modal-card--open { opacity: 1; transform: scale(1); }
+.modal-card.modal-card--closing { opacity: 0; transform: scale(0.98); }
 .modal-card h2 { margin: 0 0 8px; font-size: 18px; }
 .modal-card .modal-close-x {
   position: absolute;
@@ -1133,6 +1178,18 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .btn-rate-secondary:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* Модалка «Добавить пару»: кнопки по ширине модалки */
+.modal-add-pair-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.modal-add-pair-actions .btn-rate-secondary-full,
+.modal-add-pair-actions .btn-login-primary-full {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Код пары в модалке: крупно, фиолетовый фон, копировать */

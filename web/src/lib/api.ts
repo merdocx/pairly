@@ -11,18 +11,35 @@ function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
+const API_TIMEOUT_MS = 15000;
+
 export async function api<T>(
   path: string,
   options: RequestInit & { token?: string | null } = {}
 ): Promise<T> {
-  const { token = getToken(), ...rest } = options;
+  const { token = getToken(), signal: userSignal, ...rest } = options;
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(rest.headers as Record<string, string>),
   };
   if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   const base = typeof window !== 'undefined' ? getApiUrl() : API_URL;
-  const res = await fetch(`${base}${path}`, { ...rest, headers, credentials: 'include' });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  if (userSignal) {
+    userSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  let res: Response;
+  try {
+    res = await fetch(`${base}${path}`, {
+      ...rest,
+      headers,
+      credentials: 'include',
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
   let data: Record<string, unknown>;
   try {
     const text = await res.text();
@@ -40,6 +57,7 @@ export function getErrorMessage(e: unknown): string {
   if (!(e instanceof Error)) return 'Произошла ошибка';
   const m = e.message;
   if (/failed to fetch|network is not defined|networkerror/i.test(m)) return 'Проверьте подключение к интернету';
+  if (e.name === 'AbortError' || /abort/i.test(m)) return 'Сервер не отвечает. Попробуйте позже.';
   return m;
 }
 

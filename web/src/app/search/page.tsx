@@ -1,42 +1,17 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { api, getErrorMessage } from '@/lib/api';
 import type { MovieSearch, WatchlistItem, MovieDetail } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { CheckIcon, CalendarIconSmall, ClockIconSmall } from '@/components/Icons';
+import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { PosterImage } from '@/components/PosterImage';
 import { StarRatingDisplay, StarRatingInput } from '@/components/StarRating';
-
-function CheckIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function CalendarIconSmall() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function ClockIconSmall() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
+import { useToast } from '@/components/Toast';
 
 export default function SearchPage() {
   const router = useRouter();
@@ -49,6 +24,11 @@ export default function SearchPage() {
   const [rateModalItem, setRateModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv'; title: string } | null>(null);
   const [detailModalItem, setDetailModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [detailMovie, setDetailMovie] = useState<MovieDetail | null>(null);
+  const [sortedResults, setSortedResults] = useState<MovieSearch['results']>([]);
+  const rateModalAnim = useModalAnimation(!!rateModalItem, () => setRateModalItem(null));
+  const detailModalAnim = useModalAnimation(!!(detailModalItem && detailMovie), () => setDetailModalItem(null));
+  const { showToast } = useToast();
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     api<{ items: WatchlistItem[] }>('/api/watchlist/me')
@@ -87,19 +67,25 @@ export default function SearchPage() {
         setData(null);
         return;
       }
+      searchAbortRef.current?.abort();
+      searchAbortRef.current = new AbortController();
+      const signal = searchAbortRef.current.signal;
       setLoading(true);
       setError('');
       try {
         const res = await api<MovieSearch>(
-          `/api/movies/search?q=${encodeURIComponent(q.trim())}&page=${page}`
+          `/api/movies/search?q=${encodeURIComponent(q.trim())}&page=${page}`,
+          { signal }
         );
+        if (signal.aborted) return;
         if (page === 1) setData(res);
         else setData((prev) => (prev ? { ...res, results: [...prev.results, ...res.results] } : res));
       } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') return;
         setError(getErrorMessage(e));
         if (e instanceof Error && (e.message.includes('401') || e.message.includes('token'))) router.replace('/login');
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
     [router]
@@ -109,11 +95,28 @@ export default function SearchPage() {
     if (!query.trim()) {
       setData(null);
       setError('');
+      setSortedResults([]);
       return;
     }
     const t = setTimeout(() => search(query.trim(), 1), 400);
     return () => clearTimeout(t);
   }, [query, search]);
+
+  useEffect(() => {
+    if (!data?.results?.length) {
+      setSortedResults([]);
+      return;
+    }
+    setSortedResults(
+      [...data.results].sort((a, b) => {
+        const aIn = watchlistItems.some((i) => i.movie_id === a.id && i.media_type === a.media_type);
+        const bIn = watchlistItems.some((i) => i.movie_id === b.id && i.media_type === b.media_type);
+        return (bIn ? 1 : 0) - (aIn ? 1 : 0);
+      })
+    );
+    // Сортировка только при новом поиске/подгрузке (data), не при изменении watchlistItems
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- watchlistItems намеренно не в deps
+  }, [data]);
 
   const loadMore = () => {
     if (!data || data.page >= data.total_pages || loading || !query.trim()) return;
@@ -129,7 +132,7 @@ export default function SearchPage() {
       });
       setWatchlistItems((prev) => [...prev, { movie_id: m.id, media_type: m.media_type, added_at: '', rating: null, watched: false, title: m.title, release_date: m.release_date, poster_path: m.poster_path }]);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     } finally {
       setAddingId(null);
     }
@@ -140,7 +143,7 @@ export default function SearchPage() {
       await api(`/api/watchlist/me/${movieId}?type=${mediaType}`, { method: 'DELETE' });
       setWatchlistItems((prev) => prev.filter((i) => !(i.movie_id === movieId && i.media_type === mediaType)));
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -154,7 +157,7 @@ export default function SearchPage() {
         prev.map((i) => (i.movie_id === movieId && i.media_type === mediaType ? { ...i, rating, watched: true } : i))
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -165,7 +168,7 @@ export default function SearchPage() {
         prev.map((i) => (i.movie_id === movieId && i.media_type === mediaType ? { ...i, rating: null, watched: false } : i))
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Ошибка');
+      showToast(getErrorMessage(e));
     }
   }
 
@@ -200,15 +203,9 @@ export default function SearchPage() {
               {data.results.length === 0 && query.trim() && !loading && (
                 <p className="empty-text">Ничего не найдено.</p>
               )}
-              {data.results.length > 0 && (
+              {sortedResults.length > 0 && (
                 <ul className="film-grid">
-                  {[...data.results]
-                    .sort((a, b) => {
-                      const aIn = inWatchlist(a.id, a.media_type);
-                      const bIn = inWatchlist(b.id, b.media_type);
-                      return (bIn ? 1 : 0) - (aIn ? 1 : 0);
-                    })
-                    .map((m) => {
+                  {sortedResults.map((m) => {
                     const item = getWatchlistItem(m.id, m.media_type);
                     const inList = !!item;
                     return (
@@ -298,7 +295,7 @@ export default function SearchPage() {
                   })}
                 </ul>
               )}
-              {data.results.length > 0 && data.page < data.total_pages && (
+              {sortedResults.length > 0 && data && data.page < data.total_pages && (
                 <button type="button" onClick={loadMore} disabled={loading} className="load-more-btn">
                   Загрузить ещё
                 </button>
@@ -314,9 +311,14 @@ export default function SearchPage() {
           const currentRating = currentItem?.rating ?? null;
           const displayStars = currentRating != null ? Math.round(currentRating / 2) : 0;
           return (
-            <div className="modal-overlay" onClick={() => setRateModalItem(null)} role="dialog" aria-modal="true" aria-labelledby="rate-movie-title">
-              <div className="modal-card modal-rate" onClick={(e) => e.stopPropagation()}>
-                <button type="button" className="modal-close-x" onClick={() => setRateModalItem(null)} aria-label="Закрыть">×</button>
+            <div
+              className={`modal-overlay ${rateModalAnim.open ? 'modal-overlay--open' : ''} ${rateModalAnim.closing ? 'modal-overlay--closing' : ''}`}
+              onClick={rateModalAnim.requestClose}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="rate-movie-title"
+            >
+              <div className={`modal-card modal-rate ${rateModalAnim.open ? 'modal-card--open' : ''} ${rateModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <h2 id="rate-movie-title" className="modal-rate-title">Оценить фильм</h2>
                 <p className="modal-rate-question">Как бы вы оценили «{rateModalItem.title}»?</p>
                 <div className="modal-rate-stars">
@@ -332,7 +334,7 @@ export default function SearchPage() {
                   {displayStars > 0 ? `${displayStars} из 5` : 'Выберите оценку'}
                 </p>
                 <div className="modal-rate-actions">
-                  <button type="button" className="btn-rate-secondary" onClick={() => setRateModalItem(null)}>Отмена</button>
+                  <button type="button" className="btn-rate-secondary" onClick={rateModalAnim.requestClose}>Отмена</button>
                 </div>
               </div>
             </div>
@@ -352,10 +354,16 @@ export default function SearchPage() {
           const searchResult = data?.results?.find((r) => r.id === detailModalItem.movieId && r.media_type === detailModalItem.mediaType);
           const addPayload = searchResult || { id: detailMovie.id, media_type: (detailMovie.media_type || 'movie') as 'movie' | 'tv', title: detailMovie.title, release_date: detailMovie.release_date, poster_path: detailMovie.poster_path || detailMovie.poster_path_thumb };
           return (
-            <div className="modal-overlay" onClick={() => setDetailModalItem(null)} role="dialog" aria-modal="true" aria-labelledby="detail-movie-title">
-              <div className="modal-card modal-card-detail modal-card-detail-scroll" onClick={(e) => e.stopPropagation()}>
+            <div
+              className={`modal-overlay ${detailModalAnim.open ? 'modal-overlay--open' : ''} ${detailModalAnim.closing ? 'modal-overlay--closing' : ''}`}
+              onClick={detailModalAnim.requestClose}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="detail-movie-title"
+            >
+              <div className={`modal-card modal-card-detail modal-card-detail-scroll ${detailModalAnim.open ? 'modal-card--open' : ''} ${detailModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="detail-modal-banner" style={{ backgroundImage: bannerImage ? `url(${bannerImage})` : undefined }}>
-                  <button type="button" className="detail-modal-close" onClick={() => setDetailModalItem(null)} aria-label="Закрыть">×</button>
+                  <button type="button" className="detail-modal-close" onClick={detailModalAnim.requestClose} aria-label="Закрыть">×</button>
                   {inList && item?.watched && <span className="detail-modal-watched-icon" aria-hidden><CheckIcon size={18} /></span>}
                   <div className="detail-modal-banner-content">
                     <h2 id="detail-movie-title" className="detail-modal-title">
@@ -401,14 +409,14 @@ export default function SearchPage() {
                             Не просмотрено
                           </button>
                         )}
-                        <button type="button" className="btn-delete-from-list" onClick={() => { removeFromList(item.movie_id, item.media_type); setDetailModalItem(null); }}>
+                        <button type="button" className="btn-delete-from-list" onClick={() => { removeFromList(item.movie_id, item.media_type); detailModalAnim.requestClose(); }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                             <polyline points="3 6 5 6 21 6" />
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             <line x1="10" y1="11" x2="10" y2="17" />
                             <line x1="14" y1="11" x2="14" y2="17" />
                           </svg>
-                          Удалить из списка
+                          Удалить
                         </button>
                       </>
                     ) : (
@@ -418,7 +426,6 @@ export default function SearchPage() {
                           className="btn-watched-gray btn-watched-modal"
                           onClick={async () => {
                             await addToWatchlist(addPayload);
-                            setDetailModalItem(null);
                             setRateModalItem({ movieId: detailModalItem.movieId, mediaType: detailModalItem.mediaType, title: detailMovie.title });
                           }}
                           disabled={addingId === detailModalItem.movieId}
@@ -430,7 +437,6 @@ export default function SearchPage() {
                           className="btn-add btn-watched-modal"
                           onClick={async () => {
                             await addToWatchlist(addPayload);
-                            setDetailModalItem(null);
                           }}
                           disabled={addingId === detailModalItem.movieId}
                         >
