@@ -17,13 +17,16 @@ export default function SearchPage() {
   const [error, setError] = useState('');
   const [addingId, setAddingId] = useState<number | null>(null);
   const [removingId, setRemovingId] = useState<number | null>(null);
-  const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
+  const [watchlistItems, setWatchlistItems] = useState<Array<{ movie_id: number; media_type: 'movie' | 'tv' }>>([]);
 
   useEffect(() => {
-    api<{ items: { movie_id: number }[] }>('/api/watchlist/me')
-      .then((res) => setWatchlistIds(new Set(res.items.map((i) => i.movie_id))))
+    api<{ items: { movie_id: number; media_type: 'movie' | 'tv' }[] }>('/api/watchlist/me')
+      .then((res) => setWatchlistItems(res.items.map((i) => ({ movie_id: i.movie_id, media_type: i.media_type }))))
       .catch(() => {});
   }, []);
+
+  const inWatchlist = (id: number, mediaType: 'movie' | 'tv') =>
+    watchlistItems.some((i) => i.movie_id === id && i.media_type === mediaType);
 
   const search = useCallback(
     async (q: string, page: number = 1) => {
@@ -60,15 +63,15 @@ export default function SearchPage() {
     search(submitted, data.page + 1);
   };
 
-  async function addToWatchlist(movieId: number) {
+  async function addToWatchlist(movieId: number, mediaType: 'movie' | 'tv') {
     setAddingId(movieId);
     try {
       await api('/api/watchlist/me', {
         method: 'POST',
-        body: JSON.stringify({ movie_id: movieId }),
+        body: JSON.stringify({ movie_id: movieId, media_type: mediaType }),
       });
-      setWatchlistIds((prev) => new Set(prev).add(movieId));
-      alert('Фильм добавлен в «Буду смотреть»');
+      setWatchlistItems((prev) => [...prev, { movie_id: movieId, media_type: mediaType }]);
+      alert(mediaType === 'tv' ? 'Сериал добавлен в «Буду смотреть»' : 'Фильм добавлен в «Буду смотреть»');
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Ошибка');
     } finally {
@@ -76,15 +79,11 @@ export default function SearchPage() {
     }
   }
 
-  async function removeFromWatchlist(movieId: number) {
+  async function removeFromWatchlist(movieId: number, mediaType: 'movie' | 'tv') {
     setRemovingId(movieId);
     try {
-      await api(`/api/watchlist/me/${movieId}`, { method: 'DELETE' });
-      setWatchlistIds((prev) => {
-        const next = new Set(prev);
-        next.delete(movieId);
-        return next;
-      });
+      await api(`/api/watchlist/me/${movieId}?type=${mediaType}`, { method: 'DELETE' });
+      setWatchlistItems((prev) => prev.filter((i) => !(i.movie_id === movieId && i.media_type === mediaType)));
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Ошибка');
     } finally {
@@ -135,16 +134,14 @@ export default function SearchPage() {
                     </p>
                   )}
                 </div>
-                {m.media_type === 'movie' && (
-                  watchlistIds.has(m.id) ? (
-                    <button type="button" onClick={() => removeFromWatchlist(m.id)} disabled={removingId === m.id}>
-                      {removingId === m.id ? '…' : 'Удалить'}
-                    </button>
-                  ) : (
-                    <button type="button" onClick={() => addToWatchlist(m.id)} disabled={addingId === m.id}>
-                      {addingId === m.id ? '…' : 'В список'}
-                    </button>
-                  )
+                {inWatchlist(m.id, m.media_type) ? (
+                  <button type="button" onClick={() => removeFromWatchlist(m.id, m.media_type)} disabled={removingId === m.id}>
+                    {removingId === m.id ? '…' : 'Удалить'}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => addToWatchlist(m.id, m.media_type)} disabled={addingId === m.id}>
+                    {addingId === m.id ? '…' : 'В список'}
+                  </button>
                 )}
               </li>
             ))}

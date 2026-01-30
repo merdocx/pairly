@@ -90,34 +90,34 @@ function MyList() {
       .finally(() => setLoading(false));
   }, [sort, router]);
 
-  async function removeFromList(movieId: number) {
+  async function removeFromList(movieId: number, mediaType: 'movie' | 'tv') {
     try {
-      await api(`/api/watchlist/me/${movieId}`, { method: 'DELETE' });
-      setItems((prev) => prev.filter((i) => i.movie_id !== movieId));
+      await api(`/api/watchlist/me/${movieId}?type=${mediaType}`, { method: 'DELETE' });
+      setItems((prev) => prev.filter((i) => !(i.movie_id === movieId && i.media_type === mediaType)));
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Ошибка');
     }
   }
 
-  async function setRating(movieId: number, rating: number) {
+  async function setRating(movieId: number, mediaType: 'movie' | 'tv', rating: number) {
     try {
-      await api(`/api/watchlist/me/${movieId}/rate`, {
+      await api(`/api/watchlist/me/${movieId}/rate?type=${mediaType}`, {
         method: 'PUT',
         body: JSON.stringify({ rating }),
       });
       setItems((prev) =>
-        prev.map((i) => (i.movie_id === movieId ? { ...i, rating, watched: true } : i))
+        prev.map((i) => (i.movie_id === movieId && i.media_type === mediaType ? { ...i, rating, watched: true } : i))
       );
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Ошибка');
     }
   }
 
-  async function unwatch(movieId: number) {
+  async function unwatch(movieId: number, mediaType: 'movie' | 'tv') {
     try {
-      await api(`/api/watchlist/me/${movieId}/rate`, { method: 'DELETE' });
+      await api(`/api/watchlist/me/${movieId}/rate?type=${mediaType}`, { method: 'DELETE' });
       setItems((prev) =>
-        prev.map((i) => (i.movie_id === movieId ? { ...i, rating: null, watched: false } : i))
+        prev.map((i) => (i.movie_id === movieId && i.media_type === mediaType ? { ...i, rating: null, watched: false } : i))
       );
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Ошибка');
@@ -141,16 +141,16 @@ function MyList() {
         </button>
       </p>
       {items.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>Список пуст. Добавьте фильмы из поиска.</p>
+        <p style={{ color: 'var(--muted)' }}>Список пуст. Добавьте фильмы и сериалы из поиска.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {items.map((item) => (
-            <li key={item.movie_id} className="list-row" style={{ opacity: item.watched ? 0.8 : 1 }}>
+            <li key={`${item.media_type}-${item.movie_id}`} className="list-row" style={{ opacity: item.watched ? 0.8 : 1 }}>
               <PosterImage src={item.poster_path} width={60} height={90} />
               <div style={{ flex: 1 }}>
-                <Link href={`/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
+                <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
                   {item.title}
-                  {item.release_date && ` (${item.release_date.slice(0, 4)})`}
+                  {item.release_date && ` (${String(item.release_date).slice(0, 4)})`}
                 </Link>
                 {item.watched && (
                   <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: '0.9rem' }}>
@@ -162,21 +162,21 @@ function MyList() {
                 <div>
                   <select
                     value={item.rating ?? ''}
-                    onChange={(e) => setRating(item.movie_id, Number(e.target.value))}
+                    onChange={(e) => setRating(item.movie_id, item.media_type, Number(e.target.value))}
                     style={{ marginRight: 8, padding: 4, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                       <option key={n} value={n}>{n}</option>
                     ))}
                   </select>
-                  <button type="button" onClick={() => unwatch(item.movie_id)} style={{ fontSize: '0.85rem', padding: '4px 8px' }}>
+                  <button type="button" onClick={() => unwatch(item.movie_id, item.media_type)} style={{ fontSize: '0.85rem', padding: '4px 8px' }}>
                     Снять «Просмотрено»
                   </button>
                 </div>
               ) : (
                 <div>
                   <select
-                    onChange={(e) => setRating(item.movie_id, Number(e.target.value))}
+                    onChange={(e) => setRating(item.movie_id, item.media_type, Number(e.target.value))}
                     style={{ marginRight: 8, padding: 4, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}
                   >
                     <option value="">Оценить</option>
@@ -186,7 +186,7 @@ function MyList() {
                   </select>
                 </div>
               )}
-              <button type="button" onClick={() => removeFromList(item.movie_id)} style={{ background: 'var(--error)', fontSize: '0.85rem' }}>
+              <button type="button" onClick={() => removeFromList(item.movie_id, item.media_type)} style={{ background: 'var(--error)', fontSize: '0.85rem' }}>
                 Удалить
               </button>
             </li>
@@ -215,19 +215,19 @@ function PartnerList() {
 
   if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка…</p>;
   if (error) return <p style={{ color: 'var(--error)' }}>{error}</p>;
-  if (items.length === 0) return <p style={{ color: 'var(--muted)' }}>Нет фильмов или все просмотрены партнёром.</p>;
+  if (items.length === 0) return <p style={{ color: 'var(--muted)' }}>Нет фильмов и сериалов или все просмотрены партнёром.</p>;
 
   return (
     <>
-      <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>Только непросмотренные партнёром фильмы.</p>
+      <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>Только непросмотренные партнёром.</p>
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {items.map((item) => (
-          <li key={item.movie_id} className="list-row">
+          <li key={`${item.media_type}-${item.movie_id}`} className="list-row">
             <PosterImage src={item.poster_path} width={60} height={90} />
             <div>
-              <Link href={`/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
+              <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
                 {item.title}
-                {item.release_date && ` (${item.release_date.slice(0, 4)})`}
+                {item.release_date && ` (${String(item.release_date).slice(0, 4)})`}
               </Link>
             </div>
           </li>
@@ -253,15 +253,15 @@ function IntersectionsList() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  async function setRating(movieId: number, rating: number) {
+  async function setRating(movieId: number, mediaType: 'movie' | 'tv', rating: number) {
     try {
-      await api(`/api/watchlist/me/${movieId}/rate`, {
+      await api(`/api/watchlist/me/${movieId}/rate?type=${mediaType}`, {
         method: 'PUT',
         body: JSON.stringify({ rating }),
       });
       setItems((prev) =>
         prev.map((i) =>
-          i.movie_id === movieId
+          i.movie_id === movieId && i.media_type === mediaType
             ? { ...i, my_rating: rating, average_rating: i.partner_rating != null ? (rating + i.partner_rating) / 2 : rating }
             : i
         )
@@ -273,19 +273,19 @@ function IntersectionsList() {
 
   if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка…</p>;
   if (error) return <p style={{ color: 'var(--error)' }}>{error}</p>;
-  if (items.length === 0) return <p style={{ color: 'var(--muted)' }}>Нет пересечений. Добавьте одинаковые фильмы в свои списки.</p>;
+  if (items.length === 0) return <p style={{ color: 'var(--muted)' }}>Нет пересечений. Добавьте одинаковые фильмы или сериалы в свои списки.</p>;
 
   return (
     <>
       <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>
-        Фильмы, которые вы оба добавили и ещё не просмотрели.
+        Фильмы и сериалы, которые вы оба добавили и ещё не просмотрели.
       </p>
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {items.map((item) => (
-          <li key={item.movie_id} className="list-row">
+          <li key={`${item.media_type}-${item.movie_id}`} className="list-row">
             <PosterImage src={item.poster_path} width={60} height={90} />
             <div style={{ flex: 1 }}>
-              <Link href={`/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
+              <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`} style={{ fontWeight: 500 }}>
                 {item.title}
                 {item.release_date && ` (${String(item.release_date).slice(0, 4)})`}
               </Link>
@@ -298,7 +298,7 @@ function IntersectionsList() {
             <div>
               <select
                 value={item.my_rating ?? ''}
-                onChange={(e) => setRating(item.movie_id, Number(e.target.value))}
+                onChange={(e) => setRating(item.movie_id, item.media_type, Number(e.target.value))}
                 style={{ padding: 4, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6 }}
               >
                 <option value="">Оценить</option>
@@ -307,7 +307,7 @@ function IntersectionsList() {
                 ))}
               </select>
             </div>
-            <Link href={`/movie/${item.movie_id}`}>Карточка</Link>
+            <Link href={item.media_type === 'tv' ? `/movie/${item.movie_id}?type=tv` : `/movie/${item.movie_id}`}>Карточка</Link>
           </li>
         ))}
       </ul>

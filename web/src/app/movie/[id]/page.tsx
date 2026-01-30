@@ -28,24 +28,22 @@ export default function MoviePage() {
       return;
     }
     const typeParam = type === 'tv' ? '?type=tv' : '';
+    const mediaType = isTv ? 'tv' : 'movie';
     Promise.all([
       api<MovieDetail>(`/api/movies/${id}${typeParam}`).catch((e) => {
         if (e instanceof Error && e.message.includes('не найден')) return null;
         throw e;
       }),
-      isTv
-        ? Promise.resolve(null)
-        : api<{ items: { movie_id: number; rating: number | null }[] }>('/api/watchlist/me')
-            .then((r) => {
-              const item = r.items.find((i) => i.movie_id === id);
-              setInWatchlist(!!item);
-              setMyRating(item?.rating ?? null);
-            })
-            .catch(() => setInWatchlist(false)),
+      api<{ items: { movie_id: number; media_type: string; rating: number | null }[] }>('/api/watchlist/me')
+        .then((r) => {
+          const item = r.items.find((i) => i.movie_id === id && i.media_type === mediaType);
+          setInWatchlist(!!item);
+          setMyRating(item?.rating ?? null);
+        })
+        .catch(() => setInWatchlist(false)),
     ])
       .then(([m]) => {
         setMovie(m ?? null);
-        if (isTv) setInWatchlist(false);
       })
       .catch((e) => {
         if (e instanceof Error && (e.message.includes('401') || e.message.includes('token')))
@@ -55,11 +53,13 @@ export default function MoviePage() {
       .finally(() => setLoading(false));
   }, [id, type, isTv, router]);
 
+  const mediaType = isTv ? 'tv' : 'movie';
+
   async function addToWatchlist() {
     try {
       await api('/api/watchlist/me', {
         method: 'POST',
-        body: JSON.stringify({ movie_id: id }),
+        body: JSON.stringify({ movie_id: id, media_type: mediaType }),
       });
       setInWatchlist(true);
     } catch (e) {
@@ -69,7 +69,7 @@ export default function MoviePage() {
 
   async function removeFromWatchlist() {
     try {
-      await api(`/api/watchlist/me/${id}`, { method: 'DELETE' });
+      await api(`/api/watchlist/me/${id}?type=${mediaType}`, { method: 'DELETE' });
       setInWatchlist(false);
       setMyRating(null);
     } catch (e) {
@@ -79,7 +79,7 @@ export default function MoviePage() {
 
   async function setRating(rating: number) {
     try {
-      await api(`/api/watchlist/me/${id}/rate`, {
+      await api(`/api/watchlist/me/${id}/rate?type=${mediaType}`, {
         method: 'PUT',
         body: JSON.stringify({ rating }),
       });
@@ -91,7 +91,7 @@ export default function MoviePage() {
 
   async function unwatch() {
     try {
-      await api(`/api/watchlist/me/${id}/rate`, { method: 'DELETE' });
+      await api(`/api/watchlist/me/${id}/rate?type=${mediaType}`, { method: 'DELETE' });
       setMyRating(null);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Ошибка');
@@ -152,15 +152,12 @@ export default function MoviePage() {
             <p style={{ marginTop: '1rem', lineHeight: 1.5 }}>{movie.overview}</p>
           )}
           <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {movie.media_type !== 'tv' && inWatchlist === false && (
+            {inWatchlist === false && (
               <button type="button" onClick={addToWatchlist}>
                 Добавить в «Буду смотреть»
               </button>
             )}
-            {movie.media_type === 'tv' && (
-              <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Сериалы пока нельзя добавить в список.</p>
-            )}
-            {movie.media_type !== 'tv' && inWatchlist && (
+            {inWatchlist && (
               <>
                 <button
                   type="button"
