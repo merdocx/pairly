@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 
 interface PosterImageProps {
@@ -11,6 +12,16 @@ interface PosterImageProps {
   style?: React.CSSProperties;
 }
 
+const placeholderStyle = {
+  background: 'var(--surface)',
+  borderRadius: 4,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 10,
+  color: 'var(--muted)',
+};
+
 export function PosterImage({
   src,
   alt = '',
@@ -19,17 +30,18 @@ export function PosterImage({
   className,
   style,
 }: PosterImageProps) {
-  if (!src) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
     return (
       <div
         className={className}
         style={{
           width,
           height,
-          background: 'var(--surface)',
-          borderRadius: 4,
+          ...placeholderStyle,
           ...style,
         }}
+        title={failed ? 'Не удалось загрузить изображение' : undefined}
       />
     );
   }
@@ -42,6 +54,7 @@ export function PosterImage({
       className={className}
       style={{ objectFit: 'cover', borderRadius: 4, ...style }}
       unoptimized={!src.startsWith('https://image.tmdb.org/')}
+      onError={() => setFailed(true)}
     />
   );
 }

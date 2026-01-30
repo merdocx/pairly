@@ -150,6 +150,6 @@ export async function getConfiguration(): Promise<TmdbConfiguration> {
 }
 
 export function posterPath(baseUrl: string, path: string | null, size: 'w300' | 'w500' | 'w780'): string | null {
-  if (!path) return null;
+  if (!path || !baseUrl?.trim()) return null;
   return `${baseUrl}${size}${path}`;
 }
