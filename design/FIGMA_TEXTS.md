@@ -1,8 +1,8 @@
 # Тексты интерфейса — синхронизация с Figma
 
-## Автоматическая выгрузка из Figma
+## Автоматическая выгрузка и сверка с Figma
 
-Скрипт `design/fetch-figma.mjs` загружает файл дизайна через Figma API и выгружает все тексты и цвета.
+Скрипт `design/fetch-figma.mjs` загружает файл дизайна через Figma API, выгружает тексты, цвета (включая градиенты), типографику и размеры узлов (layout), затем **автоматически запускает** `design/compare-figma.mjs` — сверку с кодом (`globals.css`): цвета, --app-max, --container-padding, типографика. Отчёт выводится в консоль (✅/❌).
 
 **Токен:** Personal Access Token из Figma (Account → Settings → Personal access tokens). Не коммитить в репозиторий.
 

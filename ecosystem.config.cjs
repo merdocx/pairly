@@ -13,6 +13,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
+      kill_timeout: 10000,
     },
     {
       name: 'pairly-web',
@@ -25,6 +26,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
+      kill_timeout: 15000,
     },
   ],
 };

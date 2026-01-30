@@ -2,6 +2,9 @@
 
 Референсы: Figma [Untitled](https://www.figma.com/design/OeztMeyJkgc6hbFlWNBRSm/Untitled), PNG в `root/design`.
 
+**Полная автоматическая сверка (цвета, размеры, типографика, иконки):**  
+`FIGMA_ACCESS_TOKEN=xxx node design/fetch-figma.mjs` — выгрузка из Figma и запуск `compare-figma.mjs`. Отчёт в консоли (✅/❌). Без токена: `node design/compare-figma.mjs` по уже выгруженным `figma-spec.json` / `figma-export.json`.
+
 ## Цвета и глобальные стили
 
 | Элемент | Дизайн | Реализация | Статус |

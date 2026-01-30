@@ -57,6 +57,12 @@ sudo certbot renew --dry-run   # проверить продление SSL
 - **Переменные:** `/root/pairly/.env` и `/root/pairly/backend/.env` (должны совпадать по содержимому для backend)
 - **JWT_SECRET:** уже сгенерирован и прописан в `.env` (не публиковать)
 
+## Таймауты и сброс соединения
+
+- **Nginx:** увеличить таймауты прокси, чтобы долгие запросы (TMDB, SSR) не обрывались. Пример конфига с `proxy_connect_timeout 60s`, `proxy_send_timeout 120s`, `proxy_read_timeout 120s` — в `docs/nginx-pairlyapp.conf`. На сервере обновить `/etc/nginx/sites-available/pairlyapp` по образцу и выполнить `sudo nginx -t && sudo systemctl reload nginx`.
+- **PM2:** в `ecosystem.config.cjs` заданы `kill_timeout` (10s backend, 15s web) — процесс успевает завершить запросы перед SIGKILL при рестарте.
+- **Сборка без таймаута (CI/IDE):** при долгой сборке Next.js запускать в фоне: `npm run build:bg` (лог в `.build.log`). Или собирать на сервере после `git pull`: `npm run build` там не ограничен таймаутом агента.
+
 ## Белая страница / ошибки после деплоя
 
 - **Backend за Nginx:** в `backend/src/app.ts` включён `app.set('trust proxy', 1)`, чтобы rate-limit и логи не падали из‑за заголовка `X-Forwarded-For`.

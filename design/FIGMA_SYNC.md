@@ -1,5 +1,33 @@
 # Почему бывают несостыковки с Figma и как их убрать
 
+## Что сверяется автоматически, а что — вручную
+
+**Скрипты в `design/`:**
+
+1. **`fetch-figma.mjs`** — выгрузка из Figma:
+   - Тексты (TEXT): путь, строка, стиль (fontSize, fontWeight и т.д.).
+   - Цвета: все SOLID fills (путь, HEX, opacity).
+   - Типографика: уникальные fontFamily + fontSize + fontWeight.
+   - Layout: у всех узлов с `absoluteBoundingBox` — path, name, type, width, height, x, y, cornerRadius.
+   - Пишет: `figma-texts.json`, `figma-export.json`, `figma-spec.json`. После выгрузки **автоматически запускает** `compare-figma.mjs`.
+
+2. **`compare-figma.mjs`** — сверка с кодом (`web/src/app/globals.css`):
+   - **Цвета:** переменные `:root` (--bg, --accent, --error и т.д.) vs цвета из Figma; градиентные цвета учитываются.
+   - **Размеры:** --app-max (448px), --container-padding (16px) vs ширины/высоты узлов в Figma.
+   - **Типографика:** размеры шрифтов 24, 16, 14, 12 px vs Figma.
+   - **Иконки:** узлы Icon/Logo/VECTOR в Figma vs иконки в коде (BottomNav 3×24×24, Logo, EyeIcon, AvatarIcon и т.д.); проверка наличия в BottomNav и логотипа, размеров 24×24.
+   - Выводит отчёт ✅/❌; при расхождениях завершается с кодом 1 (удобно для CI).
+
+**Запуск:**
+```bash
+FIGMA_ACCESS_TOKEN=xxx node design/fetch-figma.mjs   # выгрузка + сверка
+node design/compare-figma.mjs                        # только сверка (по уже выгруженным файлам)
+```
+
+**Вручную при необходимости:** тонкое расположение блоков (DevTools), побитовое совпадение SVG-путей иконок (в коде — свои SVG по макету).
+
+---
+
 ## Причины расхождений
 
 ### 1. **Разные источники правды**

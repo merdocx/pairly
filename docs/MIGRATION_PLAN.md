@@ -162,7 +162,8 @@ curl -s http://localhost:3000 | head -20
 
 ### 4.1. Nginx: конфиг для pairlyapp.ru
 
-Создать конфиг (путь может отличаться, например `/etc/nginx/sites-available/pairlyapp`):
+Полный пример с таймаутами (против 502/504 и обрывов): **`docs/nginx-pairlyapp.conf`**.  
+Создать конфиг на сервере (путь может отличаться, например `/etc/nginx/sites-available/pairlyapp`):
 
 ```nginx
 server {
