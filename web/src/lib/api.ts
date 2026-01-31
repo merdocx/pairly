@@ -1,14 +1,14 @@
 function getApiUrl(): string {
   if (typeof window !== 'undefined') {
-    return '';
+    return process.env.NEXT_PUBLIC_API_URL || '';
   }
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 }
 const API_URL = getApiUrl();
 
+// Авторизация только через httpOnly cookie (credentials: 'include'); токен в localStorage не храним (XSS).
 function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
+  return null;
 }
 
 const API_TIMEOUT_MS = 15000;

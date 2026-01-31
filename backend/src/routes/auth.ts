@@ -9,16 +9,18 @@ import { AppError } from '../middleware/errorHandler.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const SALT_ROUNDS = 10;
 const AUTH_COOKIE_NAME = 'pairly_token';
-const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const COOKIE_MAX_AGE_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней — «помнить меня»
+const COOKIE_MAX_AGE_SESSION_MS = 24 * 60 * 60 * 1000; // 24 часа — без «помнить меня»
 
-function setAuthCookie(res: import('express').Response, token: string) {
+function setAuthCookie(res: import('express').Response, token: string, rememberMe: boolean) {
   const isProd = process.env.NODE_ENV === 'production';
+  const maxAge = rememberMe ? COOKIE_MAX_AGE_REMEMBER_MS : COOKIE_MAX_AGE_SESSION_MS;
   res.cookie(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
     secure: isProd,
     sameSite: 'lax',
     path: '/',
-    maxAge: COOKIE_MAX_AGE_MS,
+    maxAge,
   });
 }
 
@@ -29,11 +31,13 @@ const registerSchema = z.object({
     .min(8, 'Минимум 8 символов')
     .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'Нужна минимум одна буква и одна цифра'),
   name: z.string().max(255).default(''),
+  remember_me: z.boolean().optional().default(true),
 });
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  remember_me: z.boolean().optional().default(true),
 });
 
 export const authRouter = Router();
@@ -45,7 +49,7 @@ authRouter.post('/register', async (req, res, next) => {
       const msg = body.error.errors.map((e) => e.message).join('; ');
       throw new AppError(400, msg, 'VALIDATION_ERROR');
     }
-    const { email, password, name } = body.data;
+    const { email, password, name, remember_me: rememberMe } = body.data;
     const pool = getPool();
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
@@ -60,9 +64,9 @@ authRouter.post('/register', async (req, res, next) => {
     const token = jwt.sign(
       { userId: user.id, email: user.email } as JwtPayload,
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: rememberMe ? '30d' : '24h' }
     );
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, rememberMe);
     res.status(201).json({
       user: { id: user.id, email: user.email, name: user.name },
       token,
@@ -78,7 +82,7 @@ authRouter.post('/login', async (req, res, next) => {
     if (!body.success) {
       throw new AppError(400, 'Некорректный email или пароль', 'VALIDATION_ERROR');
     }
-    const { email, password } = body.data;
+    const { email, password, remember_me: rememberMe } = body.data;
     const pool = getPool();
     const result = await pool.query(
       'SELECT id, email, name, password_hash FROM users WHERE email = $1',
@@ -98,9 +102,9 @@ authRouter.post('/login', async (req, res, next) => {
     const token = jwt.sign(
       { userId: user.id, email: user.email } as JwtPayload,
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: rememberMe ? '30d' : '24h' }
     );
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, rememberMe);
     res.json({
       user: { id: user.id, email: user.email, name: user.name },
       token,

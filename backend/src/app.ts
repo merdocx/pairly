@@ -19,7 +19,18 @@ app.set('trust proxy', 1);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      reportOnly: true,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'https://image.tmdb.org', 'data:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        frameSrc: ["'self'", 'https://appleid.apple.com'],
+      },
+    },
   })
 );
 
@@ -40,13 +51,25 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compression());
 
-const authRateLimit = rateLimit({
+/** Строгий лимит только для входа и регистрации (защита от перебора паролей) */
+const authLoginRegisterLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 15,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => {
-    res.status(429).json({ error: 'Слишком много попыток. Попробуйте через 15 минут.' });
+    res.status(429).json({ error: 'Слишком много попыток входа. Попробуйте через 15 минут.' });
+  },
+  skip: (req) => req.method !== 'POST' || (req.path !== '/login' && req.path !== '/register'),
+});
+/** Лимит для остальных auth-запросов (me, logout, Apple) — щедрый, чтобы не мешать обычному использованию */
+const authGeneralLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => {
+    res.status(429).json({ error: 'Слишком много запросов. Попробуйте через 15 минут.' });
   },
 });
 const apiRateLimit = rateLimit({
@@ -58,9 +81,8 @@ const apiRateLimit = rateLimit({
     res.status(429).json({ error: 'Слишком много запросов. Подождите минуту.' });
   },
 });
-
-app.use('/api/auth', authRateLimit, authRouter);
-app.use('/api/auth', authRateLimit, appleAuthRouter);
+app.use('/api/auth', authLoginRegisterLimit, authGeneralLimit, authRouter);
+app.use('/api/auth', authLoginRegisterLimit, authGeneralLimit, appleAuthRouter);
 app.use('/api/pairs', apiRateLimit, pairsRouter);
 app.use('/api/movies', apiRateLimit, moviesRouter);
 app.use('/api/watchlist', apiRateLimit, watchlistRouter);

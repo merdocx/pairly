@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 /* Иконки из Figma (BottomNav), stroke=currentColor для активного/неактивного цвета */
 function IconWatch() {
@@ -38,8 +38,6 @@ function IconProfile() {
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') || 'me';
   const isHome = pathname === '/';
   const isSearch = pathname === '/search';
   const isProfile = pathname === '/profile';

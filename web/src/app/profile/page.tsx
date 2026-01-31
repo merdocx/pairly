@@ -84,7 +84,6 @@ export default function ProfilePage() {
 
   function handleLogout() {
     api('/api/auth/logout', { method: 'POST', token: null }).catch(() => {}).finally(() => {
-      localStorage.removeItem('token');
       router.replace('/login');
     });
   }
@@ -181,7 +180,7 @@ export default function ProfilePage() {
                 <p className="pair-status-label">В паре с</p>
                 <p className="pair-status-name">{pair.pair.partner?.name || pair.pair.partner?.email || '—'}</p>
               </div>
-              <button type="button" onClick={handleLeavePair} className="profile-btn-secondary">
+              <button type="button" onClick={() => setLeaveConfirmOpen(true)} className="profile-btn-secondary">
                 Отвязать
               </button>
             </>

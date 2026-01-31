@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -13,6 +13,14 @@ import { PosterImage } from '@/components/PosterImage';
 import { StarRatingDisplay, StarRatingInput } from '@/components/StarRating';
 import { useToast } from '@/components/Toast';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { FilterButton } from '@/components/FilterButton';
+import { FiltersModal } from '@/components/FiltersModal';
+import {
+  defaultFilterState,
+  filterAndSortWatchlist,
+  getUniqueGenres,
+  countActiveFilters,
+} from '@/lib/filters';
 
 type FilmsTab = 'me' | 'partner' | 'intersections';
 
@@ -33,18 +41,22 @@ function HomePageContent() {
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setAuthed(false);
-      return;
-    }
+    let cancelled = false;
     api('/api/auth/me')
-      .then(() => setAuthed(true))
+      .then(() => { if (!cancelled) setAuthed(true); })
       .catch((e) => {
-        showToast(getErrorMessage(e));
-        localStorage.removeItem('token');
-        setAuthed(false);
+        if (!cancelled) {
+          showToast(getErrorMessage(e));
+          setAuthed(false);
+        }
       });
+    const fallbackTimer = setTimeout(() => {
+      if (!cancelled) setAuthed((prev) => (prev === null ? false : prev));
+    }, 10000);
+    return () => {
+      cancelled = true;
+      clearTimeout(fallbackTimer);
+    };
   }, [showToast]);
 
   useEffect(() => {
@@ -93,11 +105,16 @@ function MyList() {
   const router = useRouter();
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterState, setFilterState] = useState(defaultFilterState);
   const [rateModalItem, setRateModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv'; title: string } | null>(null);
   const [detailModalItem, setDetailModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [detailMovie, setDetailMovie] = useState<MovieDetail | null>(null);
   const rateModalAnim = useModalAnimation(!!rateModalItem, () => setRateModalItem(null));
   const detailModalAnim = useModalAnimation(!!(detailModalItem && detailMovie), () => setDetailModalItem(null));
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const filterModalAnim = useModalAnimation(filterModalOpen, () => setFilterModalOpen(false));
+  const filteredItems = useMemo(() => filterAndSortWatchlist(items, filterState), [items, filterState]);
+  const genres = useMemo(() => getUniqueGenres(items), [items]);
 
   useEffect(() => {
     if (!detailModalItem) {
@@ -167,9 +184,11 @@ function MyList() {
     <>
       {items.length === 0 ? (
         <p className="empty-text">В вашем списке пока нет фильмов</p>
+      ) : filteredItems.length === 0 ? (
+        <p className="empty-text">Нет фильмов, подходящих под выбранные фильтры</p>
       ) : (
         <ul className="film-grid">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <li key={`${item.media_type}-${item.movie_id}`} className="film-card" style={{ opacity: item.watched ? 0.9 : 1 }}>
               <button
                 type="button"
@@ -235,6 +254,27 @@ function MyList() {
             </li>
           ))}
         </ul>
+      )}
+
+      {items.length > 0 && (
+        <>
+          <FilterButton
+            onClick={() => setFilterModalOpen(true)}
+            activeCount={countActiveFilters(filterState)}
+          />
+          <FiltersModal
+            open={filterModalOpen}
+            closing={filterModalAnim.closing}
+            onClose={filterModalAnim.requestClose}
+            onApply={filterModalAnim.requestClose}
+            onReset={() => setFilterState(defaultFilterState)}
+            filterState={filterState}
+            setFilterState={setFilterState}
+            genres={genres}
+            showWatched={true}
+            searchMode={false}
+          />
+        </>
       )}
 
       {rateModalItem && typeof document !== 'undefined' && createPortal(
@@ -411,11 +451,16 @@ function PartnerList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addingId, setAddingId] = useState<number | null>(null);
+  const [filterState, setFilterState] = useState(defaultFilterState);
   const [rateModalItem, setRateModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv'; title: string } | null>(null);
   const [detailModalItem, setDetailModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [detailMovie, setDetailMovie] = useState<MovieDetail | null>(null);
   const rateModalAnim = useModalAnimation(!!rateModalItem, () => setRateModalItem(null));
   const detailModalAnim = useModalAnimation(!!(detailModalItem && detailMovie), () => setDetailModalItem(null));
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const filterModalAnim = useModalAnimation(filterModalOpen, () => setFilterModalOpen(false));
+  const filteredItems = useMemo(() => filterAndSortWatchlist(items, filterState), [items, filterState]);
+  const genres = useMemo(() => getUniqueGenres(items), [items]);
 
   useEffect(() => {
     Promise.all([
@@ -606,8 +651,11 @@ function PartnerList() {
   return (
     <>
       <p className="section-desc" style={{ marginBottom: 12 }}>Только непросмотренные партнёром.</p>
+      {filteredItems.length === 0 ? (
+        <p className="empty-text">Нет фильмов, подходящих под выбранные фильтры</p>
+      ) : (
       <ul className="film-grid">
-        {items.map((item) => {
+        {filteredItems.map((item) => {
           const myItem = getMyItem(item.movie_id, item.media_type);
           const inList = !!myItem;
           const watched = inList && (myItem?.rating != null ?? false);
@@ -676,6 +724,27 @@ function PartnerList() {
           );
         })}
       </ul>
+      )}
+      {items.length > 0 && (
+        <>
+          <FilterButton
+            onClick={() => setFilterModalOpen(true)}
+            activeCount={countActiveFilters(filterState)}
+          />
+          <FiltersModal
+            open={filterModalOpen}
+            closing={filterModalAnim.closing}
+            onClose={filterModalAnim.requestClose}
+            onApply={filterModalAnim.requestClose}
+            onReset={() => setFilterState(defaultFilterState)}
+            filterState={filterState}
+            setFilterState={setFilterState}
+            genres={genres}
+            showWatched={false}
+            searchMode={false}
+          />
+        </>
+      )}
       {rateModalItem && typeof document !== 'undefined' && createPortal(
         (() => {
           const currentItem = myItems.find((i) => i.movie_id === rateModalItem.movieId && i.media_type === rateModalItem.mediaType);
@@ -721,11 +790,17 @@ function IntersectionsList() {
   const [items, setItems] = useState<IntersectionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filterState, setFilterState] = useState(defaultFilterState);
   const [rateModalItem, setRateModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv'; title: string } | null>(null);
   const [detailModalItem, setDetailModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [detailMovie, setDetailMovie] = useState<MovieDetail | null>(null);
   const rateModalAnim = useModalAnimation(!!rateModalItem, () => setRateModalItem(null));
   const detailModalAnim = useModalAnimation(!!(detailModalItem && detailMovie), () => setDetailModalItem(null));
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const filterModalAnim = useModalAnimation(filterModalOpen, () => setFilterModalOpen(false));
+  const itemsWithRating = useMemo(() => items.map((i) => ({ ...i, rating: i.my_rating })), [items]);
+  const filteredItems = useMemo(() => filterAndSortWatchlist(itemsWithRating, filterState), [itemsWithRating, filterState]);
+  const genres = useMemo(() => getUniqueGenres(items), [items]);
 
   useEffect(() => {
     api<{ items: IntersectionItem[] }>('/api/watchlist/intersections')
@@ -888,8 +963,11 @@ function IntersectionsList() {
       <p className="section-desc" style={{ marginBottom: 12 }}>
         Фильмы и сериалы, которые вы оба добавили и ещё не просмотрели.
       </p>
+      {filteredItems.length === 0 ? (
+        <p className="empty-text">Нет фильмов, подходящих под выбранные фильтры</p>
+      ) : (
       <ul className="film-grid">
-        {items.map((item) => {
+        {filteredItems.map((item) => {
           const watched = item.my_rating != null;
           return (
             <li key={`${item.media_type}-${item.movie_id}`} className="film-card" style={{ opacity: watched ? 0.9 : 1 }}>
@@ -940,6 +1018,27 @@ function IntersectionsList() {
           );
         })}
       </ul>
+      )}
+      {items.length > 0 && (
+        <>
+          <FilterButton
+            onClick={() => setFilterModalOpen(true)}
+            activeCount={countActiveFilters(filterState)}
+          />
+          <FiltersModal
+            open={filterModalOpen}
+            closing={filterModalAnim.closing}
+            onClose={filterModalAnim.requestClose}
+            onApply={filterModalAnim.requestClose}
+            onReset={() => setFilterState(defaultFilterState)}
+            filterState={filterState}
+            setFilterState={setFilterState}
+            genres={genres}
+            showWatched={true}
+            searchMode={false}
+          />
+        </>
+      )}
       {rateModalItem && typeof document !== 'undefined' && createPortal(
         (() => {
           const currentItem = items.find((i) => i.movie_id === rateModalItem.movieId && i.media_type === rateModalItem.mediaType);

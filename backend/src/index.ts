@@ -12,7 +12,8 @@ function checkProdConfig() {
   const origin = process.env.WEB_ORIGIN ?? '';
   const tmdbKey = process.env.TMDB_API_KEY ?? '';
   if (!jwt || jwt === DEFAULT_JWT) {
-    console.warn('[SECURITY] В проде задайте свой длинный случайный JWT_SECRET в .env');
+    console.error('[SECURITY] В production задайте свой длинный случайный JWT_SECRET в .env (например: openssl rand -base64 32)');
+    process.exit(1);
   }
   if (origin.includes('*') || origin.trim() === '') {
     console.warn('[SECURITY] В проде задайте WEB_ORIGIN без *, только нужные домены через запятую');

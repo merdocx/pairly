@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
@@ -12,6 +12,13 @@ import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { PosterImage } from '@/components/PosterImage';
 import { StarRatingDisplay, StarRatingInput } from '@/components/StarRating';
 import { useToast } from '@/components/Toast';
+import { FilterButton } from '@/components/FilterButton';
+import { FiltersModal } from '@/components/FiltersModal';
+import {
+  defaultSearchFilterState,
+  filterAndSortSearch,
+  countActiveSearchFilters,
+} from '@/lib/filters';
 
 export default function SearchPage() {
   const router = useRouter();
@@ -25,8 +32,15 @@ export default function SearchPage() {
   const [detailModalItem, setDetailModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [detailMovie, setDetailMovie] = useState<MovieDetail | null>(null);
   const [sortedResults, setSortedResults] = useState<MovieSearch['results']>([]);
+  const [searchFilterState, setSearchFilterState] = useState(defaultSearchFilterState);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const rateModalAnim = useModalAnimation(!!rateModalItem, () => setRateModalItem(null));
   const detailModalAnim = useModalAnimation(!!(detailModalItem && detailMovie), () => setDetailModalItem(null));
+  const filterModalAnim = useModalAnimation(filterModalOpen, () => setFilterModalOpen(false));
+  const displayedResults = useMemo(
+    () => filterAndSortSearch(sortedResults, searchFilterState),
+    [sortedResults, searchFilterState]
+  );
   const { showToast } = useToast();
   const searchAbortRef = useRef<AbortController | null>(null);
 
@@ -197,9 +211,7 @@ export default function SearchPage() {
           {error && <p className="error-text">{error}</p>}
           {data && (
             <>
-              {data.total_results > 0 && (
-                <p className="section-desc" style={{ marginBottom: 12 }}>Найдено: {data.total_results}</p>
-              )}
+              <div className="search-results-inner">
               {data.results.length === 0 && query.trim() && !loading && (
                 <p className="empty-text">Ничего не найдено.</p>
               )}
@@ -309,6 +321,27 @@ export default function SearchPage() {
                 <button type="button" onClick={loadMore} disabled={loading} className="load-more-btn">
                   Загрузить ещё
                 </button>
+              )}
+              </div>
+              {sortedResults.length > 0 && (
+                <>
+                  <FilterButton
+                    onClick={() => setFilterModalOpen(true)}
+                    activeCount={countActiveSearchFilters(searchFilterState)}
+                  />
+                  <FiltersModal
+                    open={filterModalOpen}
+                    closing={filterModalAnim.closing}
+                    onClose={filterModalAnim.requestClose}
+                    onApply={filterModalAnim.requestClose}
+                    onReset={() => setSearchFilterState(defaultSearchFilterState)}
+                    searchFilterState={searchFilterState}
+                    setSearchFilterState={setSearchFilterState}
+                    genres={[]}
+                    showWatched={false}
+                    searchMode={true}
+                  />
+                </>
               )}
             </>
           )}

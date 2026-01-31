@@ -17,9 +17,16 @@ async function tmdbFetch<T>(
   ttl?: number,
   opts?: { noRegion?: boolean }
 ): Promise<T> {
+  if (!TMDB_KEY && !TMDB_ACCESS_TOKEN) {
+    throw new Error('TMDB_API_KEY_INVALID');
+  }
   if (cacheKey && ttl) {
-    const cached = await cacheGet<T>(cacheKey);
-    if (cached) return cached;
+    try {
+      const cached = await cacheGet<T>(cacheKey);
+      if (cached) return cached;
+    } catch {
+      /* Redis недоступен — продолжаем без кэша */
+    }
   }
   const params = `api_key=${TMDB_KEY}&language=${LANGUAGE}${opts?.noRegion ? '' : `&region=${REGION}`}`;
   const url = `${TMDB_BASE}${path}${path.includes('?') ? '&' : '?'}${params}`;
@@ -27,15 +34,22 @@ async function tmdbFetch<T>(
   if (TMDB_ACCESS_TOKEN) headers['Authorization'] = `Bearer ${TMDB_ACCESS_TOKEN}`;
   const res = await fetch(url, { headers });
   if (res.status === 429) {
-    throw new Error('Превышен лимит запросов. Попробуйте позже.');
+    throw new Error('429');
   }
   if (!res.ok) {
     if (res.status === 404) throw new Error('Не найден');
     if (res.status === 504) throw new Error('Таймаут. Попробуйте позже.');
-    throw new Error('Ошибка при загрузке данных.');
+    if (res.status === 401) throw new Error('TMDB_API_KEY_INVALID');
+    throw new Error(`TMDB error ${res.status}`);
   }
   const data = (await res.json()) as T;
-  if (cacheKey && ttl) await cacheSet(cacheKey, data, ttl);
+  if (cacheKey && ttl) {
+    try {
+      await cacheSet(cacheKey, data, ttl);
+    } catch {
+      /* Redis недоступен — не сохраняем в кэш */
+    }
+  }
   return data;
 }
 

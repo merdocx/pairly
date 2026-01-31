@@ -1,8 +1,19 @@
 import { Router, type Request } from 'express';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { getPool } from '../db/pool.js';
 import { authMiddleware, type JwtPayload } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
+
+const joinPairRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => {
+    res.status(429).json({ error: 'Слишком много попыток ввода кода. Попробуйте через 15 минут.' });
+  },
+});
 
 function generatePairCode(): string {
   let code = '';
@@ -87,8 +98,8 @@ pairsRouter.post('/create', async (req, res, next) => {
   }
 });
 
-// Join pair by code
-pairsRouter.post('/join', async (req, res, next) => {
+// Join pair by code (отдельный rate limit против перебора кода)
+pairsRouter.post('/join', joinPairRateLimit, async (req, res, next) => {
   try {
     const body = joinSchema.safeParse(req.body);
     if (!body.success) {

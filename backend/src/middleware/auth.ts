@@ -32,14 +32,3 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
   }
 }
 
-export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
-  const token = getTokenFromRequest(req);
-  if (!token) return next();
-  try {
-    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    (req as unknown as Request & { user?: JwtPayload }).user = payload;
-  } catch {
-    // ignore
-  }
-  next();
-}

@@ -19,10 +19,10 @@ API ключ и v4 access token прописаны в `.env` и `backend/.env`. 
 
 ### 2. Постеры и /etc/hosts (если сервер в РФ/Беларуси)
 
-По [docs/RECOMMENDATIONS.md](docs/RECOMMENDATIONS.md): если сервер в России или Беларуси, TMDB может блокировать запросы. Варианты:
+По [docs/archive/RECOMMENDATIONS.md](docs/archive/RECOMMENDATIONS.md) (раздел 7): если сервер в России или Беларуси, TMDB может блокировать запросы. Варианты:
 
 - Либо перенести приложение на зарубежный сервер (рекомендуется) — тогда обход не нужен.
-- Либо добавить в `/etc/hosts` IP для `api.themoviedb.org` и при необходимости для `image.tmdb.org` (инструкция в RECOMMENDATIONS.md, раздел 7.1).
+- Либо добавить в `/etc/hosts` IP для `api.themoviedb.org` и при необходимости для `image.tmdb.org` (инструкция в docs/archive/RECOMMENDATIONS.md, раздел 7.1).
 
 Текущий сервер: IP **144.124.248.179**. Если он за рубежом, постеры и API TMDB должны работать без правок hosts.
 

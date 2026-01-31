@@ -28,6 +28,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,17 +38,11 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      const data = await api<{ token?: string; user?: unknown }>('/api/auth/register', {
+      await api<{ user?: unknown }>('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, remember_me: rememberMe }),
         token: null,
       });
-      if (!data.token) {
-        setError('Ошибка ответа сервера. Попробуйте ещё раз.');
-        setLoading(false);
-        return;
-      }
-      localStorage.setItem('token', data.token);
       router.replace('/');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -111,6 +106,17 @@ export default function RegisterPage() {
               </button>
             </div>
             <p className="section-desc" style={{ marginTop: 6, marginBottom: 0 }}>Минимум 6 символов</p>
+          </div>
+          <div className="form-field form-field-checkbox">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                autoComplete="off"
+              />
+              <span>Запомнить меня</span>
+            </label>
           </div>
           <button type="submit" disabled={loading} className="btn-register-primary">
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}

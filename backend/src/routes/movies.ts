@@ -37,11 +37,16 @@ moviesRouter.get('/search', async (req, res, next) => {
     });
   } catch (e) {
     if (e instanceof Error) {
+      console.error('[movies/search]', e.message, e.stack);
       const msg = e.message.includes('429')
         ? 'Слишком много запросов. Попробуйте через минуту.'
-        : /timeout|ETIMEDOUT|ENOTFOUND|ECONNREFUSED|network/i.test(e.message)
-          ? 'Нет связи с сервисом фильмов. Проверьте интернет.'
-          : 'Сервис поиска фильмов временно недоступен. Попробуйте позже.';
+        : e.message === 'TMDB_API_KEY_INVALID' || /TMDB error (401|403)/.test(e.message)
+          ? 'Не настроен или неверный ключ TMDB (TMDB_API_KEY в .env). Обратитесь к администратору.'
+          : /timeout|ETIMEDOUT|ENOTFOUND|ECONNREFUSED|network/i.test(e.message)
+            ? 'Нет связи с сервисом фильмов. Проверьте интернет.'
+            : process.env.NODE_ENV !== 'production'
+              ? `Сервис поиска недоступен: ${e.message}`
+              : 'Сервис поиска фильмов временно недоступен. Попробуйте позже.';
       return next(new AppError(502, msg, 'TMDB_ERROR'));
     }
     next(e);
