@@ -24,6 +24,10 @@ const nextConfig = {
             key: 'Content-Security-Policy-Report-Only',
             value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://image.tmdb.org data:; connect-src 'self'; font-src 'self'; frame-src 'self' https://appleid.apple.com",
           },
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate',
+          },
         ],
       },
     ];

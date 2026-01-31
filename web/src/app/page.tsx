@@ -48,16 +48,25 @@ function HomePageContent() {
         if (!cancelled) {
           showToast(getErrorMessage(e));
           setAuthed(false);
+          router.replace('/login');
         }
       });
     const fallbackTimer = setTimeout(() => {
-      if (!cancelled) setAuthed((prev) => (prev === null ? false : prev));
+      if (!cancelled) {
+        setAuthed((prev) => {
+          if (prev === null) {
+            router.replace('/login');
+            return false;
+          }
+          return prev;
+        });
+      }
     }, 10000);
     return () => {
       cancelled = true;
       clearTimeout(fallbackTimer);
     };
-  }, [showToast]);
+  }, [showToast, router]);
 
   useEffect(() => {
     if (authed === false) {
