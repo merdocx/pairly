@@ -5,6 +5,7 @@ import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { authRouter } from './routes/auth.js';
+import { appleAuthRouter } from './routes/appleAuth.js';
 import { moviesRouter } from './routes/movies.js';
 import { pairsRouter } from './routes/pairs.js';
 import { watchlistRouter } from './routes/watchlist.js';
@@ -35,6 +36,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compression());
 
@@ -58,6 +60,7 @@ const apiRateLimit = rateLimit({
 });
 
 app.use('/api/auth', authRateLimit, authRouter);
+app.use('/api/auth', authRateLimit, appleAuthRouter);
 app.use('/api/pairs', apiRateLimit, pairsRouter);
 app.use('/api/movies', apiRateLimit, moviesRouter);
 app.use('/api/watchlist', apiRateLimit, watchlistRouter);

@@ -5,7 +5,7 @@ export type MovieCacheType = 'movie' | 'tv';
 export async function getMovieCache<T>(tmdbId: number, type: MovieCacheType): Promise<T | null> {
   const pool = getPool();
   const result = await pool.query(
-    `SELECT data FROM movie_cache WHERE tmdb_id = $1 AND type = $2 AND updated_at > now() - interval '7 days'`,
+    `SELECT data FROM movie_cache WHERE tmdb_id = $1 AND type = $2 AND updated_at > now() - interval '30 days'`,
     [tmdbId, type]
   );
   if (result.rows.length === 0) return null;

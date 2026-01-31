@@ -131,7 +131,8 @@ input[type="password"] {
 .auth-form .form-field,
 .auth-form .password-field-wrapper,
 .auth-form .btn-login-primary,
-.auth-form .btn-register-primary {
+.auth-form .btn-register-primary,
+.auth-form .btn-apple {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -193,6 +194,30 @@ input[type="password"] {
   border-radius: 8px;
 }
 .btn-login-primary:hover { filter: brightness(1.15); }
+.btn-apple {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  height: 44px;
+  margin-top: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface) !important;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-apple:hover {
+  background: var(--bg-alt) !important;
+  border-color: var(--text-secondary);
+}
 .login-footer {
   margin-top: 24px;
   text-align: center;
@@ -241,6 +266,37 @@ button.btn-danger:hover { filter: brightness(1.1); }
   color: var(--muted);
   font-size: 14px;
   margin: 0;
+}
+
+/* Экран загрузки: логотип ∞ + спиннер + текст */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 3rem 1rem;
+  gap: 20px;
+}
+.loading-screen-logo {
+  color: var(--accent);
+  line-height: 0;
+}
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: loading-spin 0.7s linear infinite;
+}
+@keyframes loading-spin {
+  to { transform: rotate(360deg); }
+}
+.loading-screen-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
 }
 .page-title {
   font-size: 24px;
@@ -514,6 +570,23 @@ button.btn-danger:hover { filter: brightness(1.1); }
   padding-right: 16px;
   box-sizing: border-box;
 }
+
+/* Главная: вкладки (Моё / Партнёра / Общие) — та же ширина, что и строка поиска, не зависят от наличия фильмов */
+.layout-home .home-page-sticky {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(400px, calc(100vw - 32px));
+  min-width: min(400px, calc(100vw - 32px));
+  max-width: min(400px, calc(100vw - 32px));
+  padding-left: 16px;
+  padding-right: 16px;
+  box-sizing: border-box;
+}
+.layout-home .home-page-sticky .films-tabs {
+  width: 100%;
+  box-sizing: border-box;
+}
 .search-bar-full input {
   width: 100%;
   min-width: 0;
@@ -559,22 +632,23 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .film-card-body {
   padding: 12px;
 }
-/* Чёткая сетка карточки: название → год → рейтинг → Просмотрено → Удалить. Фиксированные высоты первых трёх строк — кнопки всегда на одной высоте. */
+/* Чёткая сетка карточки: название → год → рейтинг(и) → Просмотрено → Удалить. Рейтинг может быть 1–2 ряда. */
 .film-card-body-grid {
   display: grid;
-  grid-template-rows: 40px 18px 24px auto auto;
+  grid-template-rows: 40px 18px auto auto auto;
   grid-template-columns: 1fr;
   gap: 4px 0;
   align-items: start;
 }
 .film-card-body-grid .film-card-title {
   min-height: 0;
-  height: 100%;
+  height: min-content;
+  align-self: start;
   overflow: hidden;
   display: flex;
   align-items: flex-start;
 }
-/* Название по верхнему краю ячейки: и кнопка (Моё), и ссылка (Партнёра, Общие) */
+/* Название по верхнему краю ячейки — первая строка на одном уровне во всех карточках */
 .film-card-body-grid .film-card-title .film-card-title-btn,
 .film-card-body-grid .film-card-title > a {
   display: -webkit-box;
@@ -584,13 +658,20 @@ button.btn-danger:hover { filter: brightness(1.1); }
   text-overflow: ellipsis;
   text-align: left;
   width: 100%;
+  min-width: 0;
   align-self: flex-start;
+  line-height: 1.3;
+  min-height: 0;
+  max-height: 2.6em;
 }
 .film-card-body-grid .film-card-year {
   min-height: 0;
 }
 .film-card-body-grid .film-card-rating-slot {
   min-height: 0;
+}
+.film-card-body-grid--no-rating {
+  grid-template-rows: 40px 18px auto;
 }
 .film-card-title {
   font-weight: 600;
@@ -606,15 +687,35 @@ button.btn-danger:hover { filter: brightness(1.1); }
 }
 .film-card-poster-btn:hover { opacity: 0.9; }
 .film-card-title-btn:hover { color: var(--accent); text-decoration: underline; }
-.film-card-year {
+.film-card-year,
+.film-card-meta {
   font-size: 12px;
   color: var(--muted);
   margin: 0;
 }
 .film-card-rating-slot {
+  width: 100%;
   min-height: 24px;
   display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+.film-card-rating-slot > .star-rating {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+.film-card-rating-slot .film-card-rating-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+}
+.film-card-rating-slot .film-card-rating-row .star-rating {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 .film-card-rating-slot--text {
   font-size: 12px;
@@ -668,19 +769,32 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .btn-add:hover { color: var(--accent) !important; background: var(--surface) !important; }
 .btn-add .plus-icon { color: var(--accent); }
 
-/* Звёзды рейтинга (жёлтые, 1–5) */
+/* Звёзды рейтинга (1–10), размеры для карточки / модалки / модалки оценки */
 .star-rating {
   display: inline-flex;
-  gap: 2px;
+  gap: 1px;
   align-items: center;
 }
 .star-rating svg {
-  width: 20px;
-  height: 20px;
   flex-shrink: 0;
 }
+.star-rating--card svg { width: 12px; height: 12px; }
+.star-rating--modal svg { width: 16px; height: 16px; }
+.star-rating--rate svg { width: 28px; height: 28px; }
 .star-rating .star-filled { color: #eab308; }
 .star-rating .star-empty { color: var(--border); }
+.star-rating--partner .star-filled { color: var(--accent); }
+.star-rating--partner .star-empty { color: var(--border); opacity: 0.6; }
+.film-card-rating-partner-row,
+.detail-modal-rating-partner-row {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.film-card-rating-partner-row .star-rating--partner,
+.detail-modal-rating-partner-row .star-rating--partner {
+  margin-left: 4px;
+}
 
 /* Зелёная кнопка «Просмотрено» (Figma) — только в состоянии «просмотрено» */
 .btn-watched {
@@ -839,6 +953,13 @@ button.btn-danger:hover { filter: brightness(1.1); }
 }
 .pair-status-label { font-size: 12px; color: var(--muted); margin: 0 0 4px; }
 .pair-status-name { font-weight: 600; color: var(--text); margin: 0; }
+.pair-status-box + .profile-btn-secondary {
+  margin-top: 12px;
+}
+.profile-card .profile-btn-secondary {
+  width: 100%;
+  box-sizing: border-box;
+}
 
 /* Модалка (Figma) — поверх всех элементов (хедер, нижнее меню, контент) */
 .modal-overlay {
@@ -912,6 +1033,15 @@ button.btn-danger:hover { filter: brightness(1.1); }
   background-color: var(--border);
   background-size: cover;
   background-position: center;
+}
+.detail-modal-banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  display: block;
 }
 .detail-modal-banner::after {
   content: '';
@@ -1142,14 +1272,14 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .modal-rate-stars .star-rating button,
 .modal-rate-stars .star-rating span {
   flex: 1;
-  padding: 8px;
+  padding: 6px;
   display: inline-flex;
   justify-content: center;
   min-width: 0;
 }
-.modal-rate-stars .star-rating svg {
-  width: 40px;
-  height: 40px;
+.modal-rate-stars .star-rating--rate svg {
+  width: 28px;
+  height: 28px;
 }
 .modal-rate-hint {
   margin: 0 0 24px;

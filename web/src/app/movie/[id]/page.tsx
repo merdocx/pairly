@@ -22,6 +22,7 @@ export default function MoviePage() {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [inWatchlist, setInWatchlist] = useState<boolean | null>(null);
   const [myRating, setMyRating] = useState<number | null>(null);
+  const [partnerRating, setPartnerRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [rateModalOpen, setRateModalOpen] = useState(false);
@@ -41,11 +42,12 @@ export default function MoviePage() {
         if (e instanceof Error && e.message.includes('не найден')) return null;
         throw e;
       }),
-      api<{ items: { movie_id: number; media_type: string; rating: number | null }[] }>('/api/watchlist/me')
+      api<{ items: { movie_id: number; media_type: string; rating: number | null; partner_rating?: number | null }[] }>('/api/watchlist/me')
         .then((r) => {
           const item = r.items.find((i) => i.movie_id === id && i.media_type === mediaType);
           setInWatchlist(!!item);
           setMyRating(item?.rating ?? null);
+          setPartnerRating(item?.partner_rating ?? null);
         })
         .catch(() => setInWatchlist(false)),
     ])
@@ -79,6 +81,7 @@ export default function MoviePage() {
       await api(`/api/watchlist/me/${id}?type=${mediaType}`, { method: 'DELETE' });
       setInWatchlist(false);
       setMyRating(null);
+      setPartnerRating(null);
     } catch (e) {
       showToast(getErrorMessage(e));
     }
@@ -105,7 +108,7 @@ export default function MoviePage() {
     }
   }
 
-  if (loading) return <AppLayout><div className="container">Загрузка...</div></AppLayout>;
+  if (loading) return <AppLayout><div className="container"><LoadingScreen /></div></AppLayout>;
   if (error || !movie) {
     return (
       <AppLayout>
@@ -120,7 +123,6 @@ export default function MoviePage() {
   const runtimeStr = movie.media_type !== 'tv' && movie.runtime != null && movie.runtime > 0
     ? movie.runtime >= 60 ? `${Math.floor(movie.runtime / 60)} ч ${movie.runtime % 60} мин` : `${movie.runtime} мин`
     : null;
-  const displayRating = myRating != null ? Math.round(myRating / 2) : 0;
 
   return (
     <AppLayout>
@@ -175,11 +177,14 @@ export default function MoviePage() {
               <>
                 <p style={{ fontWeight: 600, marginBottom: 8 }}>Ваша оценка</p>
                 <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <StarRatingDisplay value={myRating} />
-                  {myRating != null && <span style={{ fontSize: 14, color: 'var(--muted)' }}>{displayRating}/5</span>}
+                  <StarRatingDisplay value={myRating} size="modal" />
                   <button type="button" onClick={() => setRateModalOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 14, padding: 0, cursor: 'pointer' }}>
                     Изменить
                   </button>
+                </div>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Оценка партнёра</p>
+                <div style={{ marginBottom: 12 }}>
+                  <StarRatingDisplay value={partnerRating ?? 0} size="modal" variant="partner" />
                 </div>
               </>
             )}
@@ -245,10 +250,11 @@ export default function MoviePage() {
                   await setRating(v);
                   setRateModalOpen(false);
                 }}
+                size="rate"
               />
             </div>
             <p className="modal-rate-hint" aria-live="polite">
-              {displayRating > 0 ? `${displayRating} из 5` : 'Выберите оценку'}
+              {myRating != null ? `${myRating} из 10` : 'Выберите оценку'}
             </p>
             <div className="modal-rate-actions">
               <button type="button" className="btn-rate-secondary" onClick={rateModalAnim.requestClose}>

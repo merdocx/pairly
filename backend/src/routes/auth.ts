@@ -88,6 +88,9 @@ authRouter.post('/login', async (req, res, next) => {
       throw new AppError(401, 'Некорректный email или пароль', 'UNAUTHORIZED');
     }
     const user = result.rows[0];
+    if (!user.password_hash) {
+      throw new AppError(401, 'Войдите через Apple', 'UNAUTHORIZED');
+    }
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
       throw new AppError(401, 'Некорректный email или пароль', 'UNAUTHORIZED');

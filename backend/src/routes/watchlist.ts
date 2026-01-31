@@ -14,12 +14,18 @@ async function getDetail(tmdbId: number, mediaType: MediaType) {
   return mediaType === 'tv' ? getTvDetail(tmdbId) : getMovieDetail(tmdbId);
 }
 
+function genreFromDetail(d: { genres?: Array<{ name: string }> } | null): string | null {
+  if (!d?.genres?.length) return null;
+  return d.genres.map((g) => g.name).join(', ');
+}
+
 function detailToDenorm(d: Awaited<ReturnType<typeof getMovieDetail>> | Awaited<ReturnType<typeof getTvDetail>> | null, mediaType: MediaType) {
   if (!d) return null;
+  const genre = genreFromDetail(d);
   if (mediaType === 'tv' && 'name' in d && 'first_air_date' in d)
-    return { title: d.name, release_date: d.first_air_date ?? null, poster_path: d.poster_path ?? null, overview: d.overview ?? null };
+    return { title: d.name, release_date: d.first_air_date ?? null, poster_path: d.poster_path ?? null, overview: d.overview ?? null, genre };
   if ('title' in d && 'release_date' in d)
-    return { title: d.title, release_date: d.release_date ?? null, poster_path: d.poster_path ?? null, overview: d.overview ?? null };
+    return { title: d.title, release_date: d.release_date ?? null, poster_path: d.poster_path ?? null, overview: d.overview ?? null, genre };
   return null;
 }
 
@@ -39,18 +45,40 @@ watchlistRouter.get('/me', async (req, res, next) => {
     const sort = sortSchema.parse(req.query.sort);
     const order = sort === 'rating' ? 'r.rating DESC NULLS LAST' : 'w.added_at DESC';
     const rows = await pool.query(
-      `SELECT w.movie_id, w.media_type, w.added_at, r.rating, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path, w.overview AS w_overview
+      `SELECT w.movie_id, w.media_type, w.added_at, r.rating, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path, w.overview AS w_overview, w.genre AS w_genre
        FROM watchlist w
        LEFT JOIN ratings r ON r.user_id = w.user_id AND r.movie_id = w.movie_id AND r.media_type = w.media_type
        WHERE w.user_id = $1 ORDER BY ${order}`,
       [userId]
     );
     if (rows.rows.length === 0) return res.json({ items: [] });
+    let partnerId: string | null = null;
+    const pairRow = await pool.query(
+      'SELECT user_a_id, user_b_id FROM pairs WHERE (user_a_id = $1 OR user_b_id = $1) AND user_b_id IS NOT NULL',
+      [userId]
+    );
+    if (pairRow.rows.length > 0) {
+      const row = pairRow.rows[0] as { user_a_id: string; user_b_id: string };
+      partnerId = row.user_a_id === userId ? row.user_b_id : row.user_a_id;
+    }
+    const partnerRatings = new Map<string, number>();
+    if (partnerId && rows.rows.length > 0) {
+      const ids = rows.rows.map((r: { movie_id: number; media_type: string }) => [r.movie_id, r.media_type]) as [number, string][];
+      const orClause = ids.map((_, i) => `(movie_id = $${i * 2 + 2} AND media_type = $${i * 2 + 3})`).join(' OR ');
+      const rRows = await pool.query(
+        `SELECT movie_id, media_type, rating FROM ratings WHERE user_id = $1 AND (${orClause})`,
+        [partnerId, ...ids.flat()]
+      );
+      for (const r of rRows.rows as { movie_id: number; media_type: string; rating: number }[]) {
+        partnerRatings.set(`${r.movie_id}:${r.media_type}`, r.rating);
+      }
+    }
     const config = await getConfiguration().catch(() => null);
     const base = config?.images?.secure_base_url || config?.images?.base_url || '';
     let items = await Promise.all(
-      rows.rows.map(async (r: { movie_id: number; media_type: MediaType; added_at: Date; rating: number | null; w_title?: string | null; w_release_date?: string | null; w_poster_path?: string | null; w_overview?: string | null }) => {
+      rows.rows.map(async (r: { movie_id: number; media_type: MediaType; added_at: Date; rating: number | null; w_title?: string | null; w_release_date?: string | null; w_poster_path?: string | null; w_overview?: string | null; w_genre?: string | null }) => {
         const useCached = r.w_title != null || r.w_poster_path != null;
+        const partnerRating = partnerId ? partnerRatings.get(`${r.movie_id}:${r.media_type}`) ?? null : null;
         if (useCached) {
           return {
             movie_id: r.movie_id,
@@ -58,10 +86,12 @@ watchlistRouter.get('/me', async (req, res, next) => {
             added_at: r.added_at,
             rating: r.rating ?? null,
             watched: !!r.rating,
+            partner_rating: partnerRating,
             title: r.w_title ?? '',
             release_date: r.w_release_date ?? null,
             poster_path: r.w_poster_path ? posterPath(base, r.w_poster_path, 'w500') : null,
             overview: r.w_overview ?? null,
+            genre: r.w_genre ?? null,
           };
         }
         const d = await tmdbConcurrency(() => getDetail(r.movie_id, r.media_type)).catch(() => null);
@@ -72,10 +102,12 @@ watchlistRouter.get('/me', async (req, res, next) => {
           added_at: r.added_at,
           rating: r.rating ?? null,
           watched: !!r.rating,
+          partner_rating: partnerRating,
           title: denorm?.title ?? (d && 'title' in d ? d.title : d && 'name' in d ? d.name : ''),
           release_date: denorm?.release_date ?? (d && 'release_date' in d ? d.release_date : d && 'first_air_date' in d ? d.first_air_date : null),
           poster_path: denorm?.poster_path ? posterPath(base, denorm.poster_path, 'w500') : (d && d.poster_path ? posterPath(base, d.poster_path, 'w500') : null),
           overview: denorm?.overview ?? (d?.overview ?? null),
+          genre: denorm?.genre ?? genreFromDetail(d),
         };
       })
     );
@@ -93,14 +125,14 @@ watchlistRouter.get('/partner', async (req, res, next) => {
     const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     const pair = await pool.query(
-      'SELECT user_a_id, user_b_id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',
+      'SELECT user_a_id, user_b_id FROM pairs WHERE (user_a_id = $1 OR user_b_id = $1) AND user_b_id IS NOT NULL',
       [userId]
     );
     if (pair.rows.length === 0) throw new AppError(404, 'У вас нет пары', 'NO_PAIR');
     const partnerId = pair.rows[0].user_a_id === userId ? pair.rows[0].user_b_id : pair.rows[0].user_a_id;
     if (!partnerId) return res.json({ items: [] });
     const rows = await pool.query(
-      `SELECT w.movie_id, w.media_type, w.added_at, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path, w.overview AS w_overview
+      `SELECT w.movie_id, w.media_type, w.added_at, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path, w.overview AS w_overview, w.genre AS w_genre
        FROM watchlist w
        LEFT JOIN ratings r ON r.user_id = w.user_id AND r.movie_id = w.movie_id AND r.media_type = w.media_type
        WHERE w.user_id = $1 AND r.rating IS NULL ORDER BY w.added_at DESC`,
@@ -109,7 +141,7 @@ watchlistRouter.get('/partner', async (req, res, next) => {
     const config = await getConfiguration().catch(() => null);
     const base = config?.images?.secure_base_url || config?.images?.base_url || '';
     const items = await Promise.all(
-      rows.rows.map(async (r: { movie_id: number; media_type: MediaType; added_at: Date; w_title?: string | null; w_release_date?: string | null; w_poster_path?: string | null; w_overview?: string | null }) => {
+      rows.rows.map(async (r: { movie_id: number; media_type: MediaType; added_at: Date; w_title?: string | null; w_release_date?: string | null; w_poster_path?: string | null; w_overview?: string | null; w_genre?: string | null }) => {
         const useCached = r.w_title != null || r.w_poster_path != null;
         if (useCached) {
           return {
@@ -120,6 +152,7 @@ watchlistRouter.get('/partner', async (req, res, next) => {
             release_date: r.w_release_date ?? null,
             poster_path: r.w_poster_path ? posterPath(base, r.w_poster_path, 'w500') : null,
             overview: r.w_overview ?? null,
+            genre: r.w_genre ?? null,
           };
         }
         const d = await getDetail(r.movie_id, r.media_type).catch(() => null);
@@ -132,6 +165,7 @@ watchlistRouter.get('/partner', async (req, res, next) => {
           release_date: denorm?.release_date ?? (d && 'release_date' in d ? d.release_date : d && 'first_air_date' in d ? d.first_air_date : null),
           poster_path: denorm?.poster_path ? posterPath(base, denorm.poster_path, 'w500') : (d && d.poster_path ? posterPath(base, d.poster_path, 'w500') : null),
           overview: denorm?.overview ?? (d?.overview ?? null),
+          genre: denorm?.genre ?? genreFromDetail(d),
         };
       })
     );
@@ -146,14 +180,14 @@ watchlistRouter.get('/intersections', async (req, res, next) => {
     const userId = uid(req as unknown as Request & { user: JwtPayload });
     const pool = getPool();
     const pair = await pool.query(
-      'SELECT user_a_id, user_b_id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',
+      'SELECT user_a_id, user_b_id FROM pairs WHERE (user_a_id = $1 OR user_b_id = $1) AND user_b_id IS NOT NULL',
       [userId]
     );
     if (pair.rows.length === 0) throw new AppError(404, 'У вас нет пары', 'NO_PAIR');
     const partnerId = pair.rows[0].user_a_id === userId ? pair.rows[0].user_b_id : pair.rows[0].user_a_id;
     if (!partnerId) return res.json({ items: [] });
     const rows = await pool.query(
-      `SELECT w.movie_id, w.media_type, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path
+      `SELECT w.movie_id, w.media_type, w.title AS w_title, w.release_date AS w_release_date, w.poster_path AS w_poster_path, w.genre AS w_genre
        FROM watchlist w WHERE w.user_id = $1
        AND EXISTS (SELECT 1 FROM watchlist w2 WHERE w2.user_id = $2 AND w2.movie_id = w.movie_id AND w2.media_type = w.media_type)
        AND NOT EXISTS (SELECT 1 FROM ratings r WHERE r.user_id = $1 AND r.movie_id = w.movie_id AND r.media_type = w.media_type)
@@ -214,8 +248,8 @@ watchlistRouter.post('/me', async (req, res, next) => {
     const denorm = d ? detailToDenorm(d, mediaType) : null;
     if (denorm?.title != null || denorm?.poster_path != null) {
       await pool.query(
-        'UPDATE watchlist SET title = $1, release_date = $2, poster_path = $3, overview = $4 WHERE user_id = $5 AND movie_id = $6 AND media_type = $7',
-        [denorm.title ?? null, denorm.release_date ?? null, denorm.poster_path ?? null, denorm.overview ?? null, userId, movieId, mediaType]
+        'UPDATE watchlist SET title = $1, release_date = $2, poster_path = $3, overview = $4, genre = $5 WHERE user_id = $6 AND movie_id = $7 AND media_type = $8',
+        [denorm.title ?? null, denorm.release_date ?? null, denorm.poster_path ?? null, denorm.overview ?? null, denorm.genre ?? null, userId, movieId, mediaType]
       );
     }
     res.status(201).json({ message: mediaType === 'tv' ? 'Сериал добавлен в список' : 'Фильм добавлен в список' });

@@ -22,6 +22,20 @@
 
 После изменения переменной перезапустите процесс Next.js (`npm run start` или ваш способ запуска).
 
+## Sign in with Apple (бэкенд)
+
+Чтобы работала кнопка «Войти через Apple», на сервере с бэкендом задайте переменные окружения (из Apple Developer):
+
+| Переменная | Описание |
+|------------|----------|
+| `APPLE_CLIENT_ID` | Services ID (например `ru.pairlyapp.service`) |
+| `APPLE_TEAM_ID` | Team ID из Apple Developer |
+| `APPLE_KEY_ID` | Key ID созданного ключа для Sign in with Apple |
+| `APPLE_PRIVATE_KEY` | Содержимое .p8 файла (при необходимости замените переводы строк на `\n`) |
+| `APPLE_REDIRECT_URI` | Полный URL callback, например `https://pairlyapp.ru/api/auth/apple/callback` (должен совпадать с настройками в Apple) |
+
+**Подробная инструкция:** [APPLE_SIGNIN_SETUP.md](./APPLE_SIGNIN_SETUP.md) — пошаговая настройка в Apple Developer (Services ID, ключ, домены, Return URL).
+
 ## Проверка
 
 1. Убедитесь, что бэкенд запущен и отвечает (например, `curl -s https://pairlyapp.ru/api/health` или аналог).

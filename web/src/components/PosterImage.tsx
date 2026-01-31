@@ -31,7 +31,8 @@ export function PosterImage({
   style,
 }: PosterImageProps) {
   const [failed, setFailed] = useState(false);
-  if (!src || failed) {
+  const validSrc = typeof src === 'string' && src.length > 0;
+  if (!validSrc || failed) {
     return (
       <div
         className={className}
@@ -53,7 +54,7 @@ export function PosterImage({
       height={height}
       className={className}
       style={{ objectFit: 'cover', borderRadius: 4, ...style }}
-      unoptimized={!src.startsWith('https://image.tmdb.org/')}
+      unoptimized={!(typeof src === 'string' && src.startsWith('https://image.tmdb.org/'))}
       onError={() => setFailed(true)}
     />
   );

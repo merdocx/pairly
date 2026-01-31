@@ -229,9 +229,23 @@ export default function SearchPage() {
                               {m.title}
                             </button>
                           </h3>
-                          <p className="film-card-year">{m.release_date ? m.release_date.slice(0, 4) : '—'}</p>
+                          <p className="film-card-meta">
+                            {(() => {
+                              const yearStr = m.release_date != null ? String(m.release_date).slice(0, 4) : '';
+                              const genreStr = typeof item?.genre === 'string' && item.genre ? item.genre : '';
+                              if (yearStr && genreStr) return `${yearStr}, ${genreStr}`;
+                              if (yearStr) return yearStr;
+                              if (genreStr) return genreStr;
+                              return '—';
+                            })()}
+                          </p>
                           <div className="film-card-rating-slot">
-                            <StarRatingDisplay value={item?.rating ?? 0} />
+                            <div className="film-card-rating-row">
+                              <StarRatingDisplay value={item?.rating ?? 0} size="card" />
+                            </div>
+                            <div className="film-card-rating-row">
+                              <StarRatingDisplay value={item?.partner_rating ?? 0} size="card" variant="partner" />
+                            </div>
                           </div>
                           <div className="film-card-actions">
                             {inList && item ? (
@@ -328,10 +342,11 @@ export default function SearchPage() {
                       await setRating(rateModalItem.movieId, rateModalItem.mediaType, ratingValue);
                       setRateModalItem(null);
                     }}
+                    size="rate"
                   />
                 </div>
                 <p className="modal-rate-hint" aria-live="polite">
-                  {displayStars > 0 ? `${displayStars} из 5` : 'Выберите оценку'}
+                  {currentRating != null ? `${currentRating} из 10` : 'Выберите оценку'}
                 </p>
                 <div className="modal-rate-actions">
                   <button type="button" className="btn-rate-secondary" onClick={rateModalAnim.requestClose}>Отмена</button>
@@ -362,7 +377,8 @@ export default function SearchPage() {
               aria-labelledby="detail-movie-title"
             >
               <div className={`modal-card modal-card-detail modal-card-detail-scroll ${detailModalAnim.open ? 'modal-card--open' : ''} ${detailModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
-                <div className="detail-modal-banner" style={{ backgroundImage: bannerImage ? `url(${bannerImage})` : undefined }}>
+                <div className="detail-modal-banner">
+                  {bannerImage && <img src={bannerImage} alt="" className="detail-modal-banner-img" />}
                   <button type="button" className="detail-modal-close" onClick={detailModalAnim.requestClose} aria-label="Закрыть">×</button>
                   {inList && item?.watched && <span className="detail-modal-watched-icon" aria-hidden><CheckIcon size={18} /></span>}
                   <div className="detail-modal-banner-content">
@@ -380,8 +396,13 @@ export default function SearchPage() {
                   <section className="detail-modal-section">
                     <h3 className="detail-modal-section-title">Ваша оценка</h3>
                     <div className="detail-modal-rating-row">
-                      <StarRatingDisplay value={inList && item?.watched && item.rating != null ? item.rating : 0} />
-                      {inList && item?.watched && item.rating != null && <span className="detail-modal-rating-text">{Math.round(item.rating / 2)}/5</span>}
+                      <StarRatingDisplay value={inList && item?.watched && item.rating != null ? item.rating : 0} size="modal" />
+                    </div>
+                  </section>
+                  <section className="detail-modal-section">
+                    <h3 className="detail-modal-section-title">Оценка партнёра</h3>
+                    <div className="detail-modal-rating-row">
+                      <StarRatingDisplay value={item?.partner_rating ?? 0} size="modal" variant="partner" />
                     </div>
                   </section>
                   <dl className="detail-modal-dl">
@@ -396,7 +417,6 @@ export default function SearchPage() {
                       <p className="detail-modal-overview">{detailMovie.overview}</p>
                     </section>
                   )}
-                  {inList && <span className="tag-added tag-added-modal">Добавлено вами</span>}
                   <div className="detail-modal-actions">
                     {inList && item ? (
                       <>

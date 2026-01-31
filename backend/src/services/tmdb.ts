@@ -5,7 +5,7 @@ const LANGUAGE = 'ru-RU';
 const REGION = 'RU';
 
 const CACHE_TTL_SEARCH = 21600; // 6 часов
-const CACHE_TTL_MOVIE = 604800; // 7 дней
+const CACHE_TTL_MOVIE = 2592000; // 30 дней
 const CACHE_TTL_CONFIG = 604800; // 7 дней
 
 import { getMovieCache, setMovieCache } from '../db/movieCache.js';

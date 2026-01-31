@@ -19,6 +19,7 @@ const joinSchema = z.object({
 export const pairsRouter = Router();
 pairsRouter.use(authMiddleware);
 
+// Пара считается существующей только когда партнёр ввёл код (user_b_id задан)
 pairsRouter.get('/', async (req, res, next) => {
   try {
     const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
@@ -30,7 +31,7 @@ pairsRouter.get('/', async (req, res, next) => {
        FROM pairs p
        JOIN users ua ON ua.id = p.user_a_id
        LEFT JOIN users ub ON ub.id = p.user_b_id
-       WHERE p.user_a_id = $1 OR p.user_b_id = $1`,
+       WHERE (p.user_a_id = $1 OR p.user_b_id = $1) AND p.user_b_id IS NOT NULL`,
       [userId]
     );
     if (pair.rows.length === 0) {
@@ -54,18 +55,19 @@ pairsRouter.get('/', async (req, res, next) => {
   }
 });
 
-// Create pair (user becomes user_a, gets a 6-digit code)
+// Create pair (user becomes user_a, gets a 6-digit code). Пара «есть» только при заполненном user_b_id.
 pairsRouter.post('/create', async (req, res, next) => {
   try {
     const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
     const pool = getPool();
     const existing = await pool.query(
-      'SELECT id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',
+      'SELECT id FROM pairs WHERE (user_a_id = $1 OR user_b_id = $1) AND user_b_id IS NOT NULL',
       [userId]
     );
     if (existing.rows.length > 0) {
-      throw new AppError(400, 'Вы уже состоите в паре. Выйдите из текущей пары.', 'ALREADY_IN_PAIR');
+      throw new AppError(400, 'Вы уже состоите в паре. Зайдите в Профиль → «Отвязать», чтобы создать новую.', 'ALREADY_IN_PAIR');
     }
+    await pool.query('DELETE FROM pairs WHERE user_a_id = $1 AND user_b_id IS NULL', [userId]);
     let code = generatePairCode();
     let attempts = 0;
     while (attempts < 10) {
@@ -97,13 +99,13 @@ pairsRouter.post('/join', async (req, res, next) => {
     const { code } = body.data;
     const pool = getPool();
     const existing = await pool.query(
-      'SELECT id FROM pairs WHERE user_a_id = $1 OR user_b_id = $1',
+      'SELECT id FROM pairs WHERE (user_a_id = $1 OR user_b_id = $1) AND user_b_id IS NOT NULL',
       [userId]
     );
     if (existing.rows.length > 0) {
       throw new AppError(
         400,
-        'Вы уже состоите в паре. Выйдите из текущей пары, чтобы присоединиться к другой.',
+        'Вы уже состоите в паре. Зайдите в Профиль → «Отвязать», затем введите код снова.',
         'ALREADY_IN_PAIR'
       );
     }
@@ -133,6 +135,7 @@ pairsRouter.post('/join', async (req, res, next) => {
   }
 });
 
+// Выход из пары. Учитываем только «полные» пары (user_b_id задан); «ожидающие» строки (user_b_id NULL) тоже удаляем при leave.
 pairsRouter.post('/leave', async (req, res, next) => {
   try {
     const { userId } = (req as unknown as Request & { user: JwtPayload }).user;

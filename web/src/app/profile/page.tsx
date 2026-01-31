@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import type { User, Pair } from '@/lib/api';
 import type { WatchlistItem } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
+import { LoadingScreen } from '@/components/LoadingScreen';
 import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { useToast } from '@/components/Toast';
 
@@ -176,21 +177,13 @@ export default function ProfilePage() {
             <p className="loading-text" style={{ margin: 0 }}>Загрузка…</p>
           ) : pair.pair ? (
             <>
-              {pair.pair.partner ? (
-                <>
-                  <div className="pair-status-box">
-                    <p className="pair-status-label">В паре с</p>
-                    <p className="pair-status-name">{pair.pair.partner.name || pair.pair.partner.email}</p>
-                  </div>
-                  <button type="button" onClick={handleLeavePair} className="profile-btn-secondary">
-                    Отвязать
-                  </button>
-                </>
-              ) : (
-                <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} className="profile-btn-secondary">
-                  {pairLoading ? '…' : 'Добавить пару'}
-                </button>
-              )}
+              <div className="pair-status-box">
+                <p className="pair-status-label">В паре с</p>
+                <p className="pair-status-name">{pair.pair.partner?.name || pair.pair.partner?.email || '—'}</p>
+              </div>
+              <button type="button" onClick={handleLeavePair} className="profile-btn-secondary">
+                Отвязать
+              </button>
             </>
           ) : (
             <button type="button" onClick={handleOpenAddPair} disabled={pairLoading} className="profile-btn-secondary">
