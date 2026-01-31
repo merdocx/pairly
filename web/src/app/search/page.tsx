@@ -217,6 +217,9 @@ export default function SearchPage() {
                           style={{ display: 'block', width: '100%', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)', border: 'none', padding: 0, cursor: 'pointer' }}
                         >
                           <PosterImage src={m.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          {item?.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
+                            <span className="film-card-poster-runtime">{item.runtime} мин</span>
+                          )}
                         </button>
                         <div className="film-card-body film-card-body-grid">
                           <h3 className="film-card-title">
@@ -230,14 +233,7 @@ export default function SearchPage() {
                             </button>
                           </h3>
                           <p className="film-card-meta">
-                            {(() => {
-                              const yearStr = m.release_date != null ? String(m.release_date).slice(0, 4) : '';
-                              const genreStr = typeof item?.genre === 'string' && item.genre ? item.genre : '';
-                              if (yearStr && genreStr) return `${yearStr}, ${genreStr}`;
-                              if (yearStr) return yearStr;
-                              if (genreStr) return genreStr;
-                              return '—';
-                            })()}
+                            {m.release_date != null ? String(m.release_date).slice(0, 4) : '—'}
                           </p>
                           <div className="film-card-rating-slot">
                             <div className="film-card-rating-row">
@@ -378,7 +374,10 @@ export default function SearchPage() {
             >
               <div className={`modal-card modal-card-detail modal-card-detail-scroll ${detailModalAnim.open ? 'modal-card--open' : ''} ${detailModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="detail-modal-banner">
-                  {bannerImage && <img src={bannerImage} alt="" className="detail-modal-banner-img" />}
+                  {bannerImage && (
+                  // eslint-disable-next-line @next/next/no-img-element -- dynamic TMDB banner URL in modal
+                  <img src={bannerImage} alt="" className="detail-modal-banner-img" />
+                )}
                   <button type="button" className="detail-modal-close" onClick={detailModalAnim.requestClose} aria-label="Закрыть">×</button>
                   {inList && item?.watched && <span className="detail-modal-watched-icon" aria-hidden><CheckIcon size={18} /></span>}
                   <div className="detail-modal-banner-content">

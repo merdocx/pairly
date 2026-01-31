@@ -178,6 +178,9 @@ function MyList() {
                 style={{ display: 'block', width: '100%', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)', border: 'none', padding: 0, cursor: 'pointer' }}
               >
                 <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {item.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
+                  <span className="film-card-poster-runtime">{item.runtime} мин</span>
+                )}
               </button>
               <div className="film-card-body film-card-body-grid">
                 <h3 className="film-card-title">
@@ -296,7 +299,10 @@ function MyList() {
           >
             <div className={`modal-card modal-card-detail modal-card-detail-scroll ${detailModalAnim.open ? 'modal-card--open' : ''} ${detailModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="detail-modal-banner">
-                {bannerImage && <img src={bannerImage} alt="" className="detail-modal-banner-img" />}
+                {bannerImage && (
+                // eslint-disable-next-line @next/next/no-img-element -- dynamic TMDB banner URL in modal
+                <img src={bannerImage} alt="" className="detail-modal-banner-img" />
+              )}
                 <button type="button" className="detail-modal-close" onClick={detailModalAnim.requestClose} aria-label="Закрыть">
                   ×
                 </button>
@@ -628,7 +634,9 @@ function PartnerList() {
                 </h3>
                 <p className="film-card-meta">{formatYearGenre(item.release_date, item.genre)}</p>
                 <div className="film-card-rating-slot">
-                  <StarRatingDisplay value={myItem?.rating ?? 0} size="card" />
+                  <div className="film-card-rating-row">
+                    <StarRatingDisplay value={myItem?.rating ?? 0} size="card" />
+                  </div>
                 </div>
                 <div className="film-card-actions">
                   {inList && myItem ? (
@@ -811,7 +819,10 @@ function IntersectionsList() {
       >
         <div className={`modal-card modal-card-detail modal-card-detail-scroll ${detailModalAnim.open ? 'modal-card--open' : ''} ${detailModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="detail-modal-banner">
-            {bannerImage && <img src={bannerImage} alt="" className="detail-modal-banner-img" />}
+            {bannerImage && (
+                // eslint-disable-next-line @next/next/no-img-element -- dynamic TMDB banner URL in modal
+                <img src={bannerImage} alt="" className="detail-modal-banner-img" />
+              )}
             <button type="button" className="detail-modal-close" onClick={detailModalAnim.requestClose} aria-label="Закрыть">×</button>
             {watched && <span className="detail-modal-watched-icon" aria-hidden><CheckIcon size={18} /></span>}
             <div className="detail-modal-banner-content">
@@ -889,6 +900,9 @@ function IntersectionsList() {
                 style={{ display: 'block', width: '100%', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)', border: 'none', padding: 0, cursor: 'pointer' }}
               >
                 <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {item.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
+                  <span className="film-card-poster-runtime">{item.runtime} мин</span>
+                )}
               </button>
               <div className="film-card-body film-card-body-grid film-card-body-grid--no-rating">
                 <h3 className="film-card-title">

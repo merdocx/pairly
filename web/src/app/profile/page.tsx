@@ -150,7 +150,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) return <div className="container"><p className="loading-text">Загрузка…</p></div>;
+  if (loading) return <AppLayout><div className="container"><LoadingScreen /></div></AppLayout>;
   if (!user) return null;
 
   const pairCode = pair?.pair?.code || justCreatedCode;

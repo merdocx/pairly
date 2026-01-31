@@ -5,9 +5,6 @@ import {
   getTvDetail,
   getConfiguration,
   posterPath,
-  type TmdbMovieDetail,
-  type TmdbTvDetail,
-  type TmdbConfiguration,
 } from '../services/tmdb.js';
 import { AppError } from '../middleware/errorHandler.js';
 

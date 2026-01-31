@@ -11,6 +11,7 @@ import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { PosterImage } from '@/components/PosterImage';
 import { StarRatingDisplay, StarRatingInput } from '@/components/StarRating';
 import { useToast } from '@/components/Toast';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 export default function MoviePage() {
   const router = useRouter();

@@ -43,13 +43,13 @@ body {
   background: var(--text);
   color: var(--surface);
   font-size: 14px;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   z-index: 10001;
   animation: toast-in 0.2s ease;
 }
 @keyframes toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 a {
@@ -68,7 +68,7 @@ button {
   color: white;
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 button:hover {
   background: var(--accent-hover);
@@ -84,7 +84,7 @@ input[type="password"] {
   border: 1px solid var(--border);
   color: var(--text);
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 6px;
   width: 100%;
   max-width: 320px;
   font-size: 14px;
@@ -104,8 +104,8 @@ input[type="password"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 .login-logo {
   font-size: 24px;
@@ -150,8 +150,8 @@ input[type="password"] {
   background: var(--bg-alt) !important;
   border: none !important;
   height: 36px;
-  padding: 8px 12px !important;
-  border-radius: 8px;
+  padding: 6px 12px !important;
+  border-radius: 6px;
 }
 .auth-form input::placeholder { color: var(--muted); }
 .password-field-wrapper {
@@ -191,7 +191,7 @@ input[type="password"] {
   height: 36px;
   font-weight: 600;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 .btn-login-primary:hover { filter: brightness(1.15); }
 .btn-apple {
@@ -208,7 +208,7 @@ input[type="password"] {
   color: var(--text);
   background: var(--surface) !important;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   text-decoration: none;
   box-sizing: border-box;
   cursor: pointer;
@@ -227,21 +227,21 @@ input[type="password"] {
 .login-footer a { color: var(--accent); font-weight: 600; }
 .register-card { background: var(--surface); border-radius: 12px; padding: 32px 24px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06); width: 100%; }
 .register-header { text-align: center; margin-bottom: 24px; }
-.register-logo-wrap { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
+.register-logo-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 6px; }
 .register-logo { font-size: 24px; font-weight: 700; background: var(--header-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0; }
 .register-subtitle { font-size: 16px; color: var(--text-secondary); margin: 0; }
 .register-footer { margin-top: 24px; text-align: center; font-size: 14px; color: var(--text-secondary); }
 .register-footer a { color: var(--accent); font-weight: 600; }
-.btn-register-primary { background: #030213 !important; color: white !important; width: 100%; padding: 10px 16px; height: 36px; font-weight: 600; border: none; border-radius: 8px; }
+.btn-register-primary { background: #030213 !important; color: white !important; width: 100%; padding: 10px 16px; height: 36px; font-weight: 600; border: none; border-radius: 6px; }
 .btn-register-primary:hover { filter: brightness(1.15); }
 .search-form { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .search-input { flex: 1; min-width: 200px; }
 .load-more-btn { margin-top: 16px; }
 .profile-block { max-width: 400px; margin-bottom: 32px; }
-.profile-block p { margin: 0 0 8px; font-size: 14px; }
+.profile-block p { margin: 0 0 6px; font-size: 14px; }
 .profile-block button { margin-top: 16px; }
 .profile-section-title { font-size: 18px; font-weight: 600; margin: 0 0 12px; color: var(--text); }
-.pair-code { font-size: 24px; letter-spacing: 4px; font-family: monospace; margin: 8px 0; }
+.pair-code { font-size: 24px; letter-spacing: 4px; font-family: monospace; margin: 6px 0; }
 .pair-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
 .pair-form input.pair-code-input { max-width: 120px; text-align: center; letter-spacing: 4px; }
 button.btn-danger { background: var(--error); color: white; margin-top: 16px; }
@@ -476,7 +476,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .app-header-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .app-header-logo-icon {
   flex-shrink: 0;
@@ -504,7 +504,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   text-decoration: none;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
@@ -537,7 +537,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   padding-right: 12px;
   background: var(--bg-alt) !important;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   height: 44px;
   font-size: 14px;
 }
@@ -594,7 +594,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   padding-right: 12px;
   background: var(--bg-alt) !important;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   height: 44px;
   font-size: 16px; /* не менее 16px — иначе iOS при фокусе зумит страницу */
   box-sizing: border-box;
@@ -629,15 +629,31 @@ button.btn-danger:hover { filter: brightness(1.1); }
   width: 100%;
   object-fit: cover;
 }
+.film-card-poster-btn {
+  position: relative;
+}
+.film-card-poster-runtime {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 12px;
+  pointer-events: none;
+  line-height: 1.2;
+}
 .film-card-body {
   padding: 12px;
 }
-/* Чёткая сетка карточки: название → год → рейтинг(и) → Просмотрено → Удалить. Рейтинг может быть 1–2 ряда. */
+/* Чёткая сетка карточки: название → год/жанр → длительность → рейтинг(и) → действия. Единый отступ 6px между строками. */
 .film-card-body-grid {
   display: grid;
-  grid-template-rows: 40px 18px auto auto auto;
+  grid-template-rows: 40px auto auto auto auto;
   grid-template-columns: 1fr;
-  gap: 4px 0;
+  gap: 6px 0;
   align-items: start;
 }
 .film-card-body-grid .film-card-title {
@@ -671,7 +687,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   min-height: 0;
 }
 .film-card-body-grid--no-rating {
-  grid-template-rows: 40px 18px auto;
+  grid-template-rows: 40px auto auto;
 }
 .film-card-title {
   font-weight: 600;
@@ -687,7 +703,11 @@ button.btn-danger:hover { filter: brightness(1.1); }
 }
 .film-card-poster-btn:hover { opacity: 0.9; }
 .film-card-title-btn:hover { color: var(--accent); text-decoration: underline; }
-.film-card-year,
+.film-card-year {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 10px 0;
+}
 .film-card-meta {
   font-size: 12px;
   color: var(--muted);
@@ -724,7 +744,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .film-card-actions {
   display: grid;
   grid-template-rows: auto auto;
-  gap: 8px;
+  gap: 6px;
   align-items: start;
   min-height: 72px;
 }
@@ -739,7 +759,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .film-card-select {
   width: 100%;
   box-sizing: border-box;
-  padding: 6px 8px;
+  padding: 6px 6px;
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -761,7 +781,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   color: var(--text) !important;
   border: none !important;
   font-size: 14px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -806,7 +826,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   text-align: center;
 }
 .btn-watched:hover { filter: brightness(1.1); }
@@ -820,7 +840,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   text-align: center;
   cursor: pointer;
 }
@@ -833,7 +853,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .btn-watched-card {
   padding: 6px 12px !important;
   font-size: 12px !important;
-  border-radius: 8px !important;
+  border-radius: 6px !important;
   justify-content: center;
 }
 
@@ -844,7 +864,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   border: none !important;
   font-size: 12px;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
@@ -866,7 +886,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   color: white !important;
   border: none !important;
   font-size: 13px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -947,7 +967,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 .profile-card-row:last-child { margin-bottom: 0; }
 .pair-status-box {
   background: rgba(230, 0, 118, 0.08);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 12px;
   margin-top: 12px;
 }
@@ -983,7 +1003,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   padding: 24px;
   max-width: 400px;
   width: 100%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.12);
   position: relative;
   z-index: 10000;
   opacity: 0;
@@ -992,7 +1012,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
 }
 .modal-card.modal-card--open { opacity: 1; transform: scale(1); }
 .modal-card.modal-card--closing { opacity: 0; transform: scale(0.98); }
-.modal-card h2 { margin: 0 0 8px; font-size: 18px; }
+.modal-card h2 { margin: 0 0 6px; font-size: 18px; }
 .modal-card .modal-close-x {
   position: absolute;
   top: 12px;
@@ -1149,7 +1169,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   margin-bottom: 16px;
 }
 .detail-modal-section-title {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -1209,7 +1229,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   padding: 12px 16px !important;
   font-size: 15px !important;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 .btn-watched-gray.btn-watched-modal {
   width: 100%;
@@ -1219,7 +1239,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   padding: 10px 16px;
   background: transparent !important;
@@ -1227,7 +1247,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   border: 1px solid var(--error) !important;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
 }
 .btn-delete-from-list:hover {
@@ -1299,8 +1319,8 @@ button.btn-danger:hover { filter: brightness(1.1); }
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 6px 16px;
+  border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1338,7 +1358,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   letter-spacing: 4px;
   font-family: monospace;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 6px;
   text-align: center;
 }
 .btn-copy {
@@ -1361,7 +1381,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 .btn-leave:hover { filter: brightness(1.1); }
 .btn-leave.outline {
@@ -1376,7 +1396,7 @@ button.btn-danger:hover { filter: brightness(1.1); }
   color: var(--text) !important;
   border: 1px solid var(--border) !important;
   font-size: 13px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
