@@ -4,12 +4,16 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { authRouter } from './routes/auth.js';
 import { appleAuthRouter } from './routes/appleAuth.js';
 import { moviesRouter } from './routes/movies.js';
 import { pairsRouter } from './routes/pairs.js';
+import { profileRouter } from './routes/profile.js';
 import { watchlistRouter } from './routes/watchlist.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { AppError } from './middleware/errorHandler.js';
 
 export const app = express();
 
@@ -86,6 +90,20 @@ app.use('/api/auth', authLoginRegisterLimit, authGeneralLimit, appleAuthRouter);
 app.use('/api/pairs', apiRateLimit, pairsRouter);
 app.use('/api/movies', apiRateLimit, moviesRouter);
 app.use('/api/watchlist', apiRateLimit, watchlistRouter);
+app.use('/api/profile', apiRateLimit, profileRouter);
+
+app.get('/api/avatars/:filename', (req, res, next) => {
+  const filename = req.params.filename;
+  if (!/^[a-f0-9-]+\.webp$/i.test(filename)) {
+    return next(new AppError(400, 'Invalid filename', 'VALIDATION_ERROR'));
+  }
+  const filepath = join(process.cwd(), 'uploads', 'avatars', filename);
+  if (!existsSync(filepath)) {
+    return next(new AppError(404, 'Not found', 'NOT_FOUND'));
+  }
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(filepath);
+});
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

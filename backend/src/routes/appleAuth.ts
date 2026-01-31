@@ -5,7 +5,7 @@ import { getPool } from '../db/pool.js';
 import { type JwtPayload } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'default-change-in-production';
 const AUTH_COOKIE_NAME = 'pairly_token';
 const APPLE_STATE_COOKIE = 'pairly_apple_state';
 const APPLE_STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 min

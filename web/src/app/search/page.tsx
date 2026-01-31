@@ -204,7 +204,22 @@ export default function SearchPage() {
               placeholder="Поиск фильмов..."
               aria-label="Поиск"
               autoComplete="off"
+              className={query.trim() ? 'search-bar-has-clear' : ''}
             />
+            {query.trim() && (
+              <button
+                type="button"
+                className="search-bar-clear"
+                onClick={() => setQuery('')}
+                aria-label="Очистить поиск"
+                title="Очистить"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
         <div className="home-page-scroll">
@@ -249,10 +264,12 @@ export default function SearchPage() {
                           </p>
                           <div className="film-card-rating-slot">
                             <div className="film-card-rating-row">
-                              <StarRatingDisplay value={item?.rating ?? 0} size="card" />
+                              <span className="film-card-rating-label">Моя оценка:</span>
+                              <span className="film-card-rating-value">{item?.rating != null ? `${item.rating} из 10` : '—'}</span>
                             </div>
                             <div className="film-card-rating-row">
-                              <StarRatingDisplay value={item?.partner_rating ?? 0} size="card" variant="partner" />
+                              <span className="film-card-rating-label">Оценка партнёра:</span>
+                              <span className="film-card-rating-value">{item?.partner_rating != null ? `${item.partner_rating} из 10` : '—'}</span>
                             </div>
                           </div>
                           <div className="film-card-actions">
@@ -442,6 +459,8 @@ export default function SearchPage() {
                     <dd>Не указан</dd>
                     <dt>Жанр:</dt>
                     <dd>{detailMovie.genres?.length ? detailMovie.genres.map((g) => g.name).join(', ') : '—'}</dd>
+                    <dt>Оценка TMDB:</dt>
+                    <dd>{detailMovie.vote_average != null && Number.isFinite(detailMovie.vote_average) ? `${Number(detailMovie.vote_average).toFixed(1)}` : '—'}</dd>
                   </dl>
                   {detailMovie.overview && (
                     <section className="detail-modal-section">

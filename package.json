@@ -1,12 +1,9 @@
 {
   "name": "pairly",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "private": true,
   "description": "Pairly — веб-приложение для пар: списки «Буду смотреть», пересечения, оценки",
   "scripts": {
-    "dev": "npm run dev:backend & npm run dev:web",
-    "dev:backend": "npm run dev --workspace=backend",
-    "dev:web": "npm run dev --workspace=web",
     "build": "npm run build -w backend & npm run build -w web & wait",
     "build:sequential": "npm run build -w backend && npm run build -w web",
     "build:parallel": "npm run build -w backend & npm run build -w web & wait",

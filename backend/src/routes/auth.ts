@@ -6,7 +6,7 @@ import { getPool } from '../db/pool.js';
 import { authMiddleware, type JwtPayload } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'default-change-in-production';
 const SALT_ROUNDS = 10;
 const AUTH_COOKIE_NAME = 'pairly_token';
 const COOKIE_MAX_AGE_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней — «помнить меня»
@@ -124,7 +124,7 @@ authRouter.get('/me', authMiddleware, async (req, res, next) => {
     const { userId } = (req as unknown as Request & { user: JwtPayload }).user;
     const pool = getPool();
     const result = await pool.query(
-      'SELECT id, email, name FROM users WHERE id = $1',
+      'SELECT id, email, name, avatar_url FROM users WHERE id = $1',
       [userId]
     );
     if (result.rows.length === 0) {

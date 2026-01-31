@@ -13,6 +13,7 @@ test-results/
 # Build outputs
 dist/
 .next/
+backend/uploads/
 out/
 build/
 *.tsbuildinfo

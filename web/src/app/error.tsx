@@ -15,8 +15,8 @@ export default function Error({
 
   return (
     <div
+      className="min-h-viewport"
       style={{
-        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

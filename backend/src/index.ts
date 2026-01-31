@@ -4,7 +4,7 @@ import { getPool } from './db/pool.js';
 import { getRedis } from './db/redis.js';
 
 const PORT = Number(process.env.PORT) || 4000;
-const DEFAULT_JWT = 'dev-secret-change-in-production';
+const DEFAULT_JWT = 'default-change-in-production';
 
 function checkProdConfig() {
   if (process.env.NODE_ENV !== 'production') return;

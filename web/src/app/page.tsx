@@ -17,6 +17,7 @@ import { FilterButton } from '@/components/FilterButton';
 import { FiltersModal } from '@/components/FiltersModal';
 import {
   defaultFilterState,
+  defaultFilterStateForMyList,
   filterAndSortWatchlist,
   getUniqueGenres,
   countActiveFilters,
@@ -74,11 +75,7 @@ function HomePageContent() {
     }
   }, [authed, router]);
 
-  if (authed === null) {
-    return <LoadingScreen />;
-  }
-
-  if (!authed) {
+  if (authed === false) {
     return <LoadingScreen />;
   }
 
@@ -93,18 +90,32 @@ function HomePageContent() {
           </div>
         </div>
         <div className="home-page-scroll">
-          <div style={{ display: tab === 'me' ? 'block' : 'none' }}><MyList /></div>
-          <div style={{ display: tab === 'partner' ? 'block' : 'none' }}><PartnerList /></div>
-          <div style={{ display: tab === 'intersections' ? 'block' : 'none' }}><IntersectionsList /></div>
+          {authed === null ? (
+            <HomeTabLoading />
+          ) : (
+            <>
+              <div style={{ display: tab === 'me' ? 'block' : 'none' }}><MyList /></div>
+              <div style={{ display: tab === 'partner' ? 'block' : 'none' }}><PartnerList /></div>
+              <div style={{ display: tab === 'intersections' ? 'block' : 'none' }}><IntersectionsList /></div>
+            </>
+          )}
         </div>
       </div>
     </AppLayout>
   );
 }
 
+function HomeTabLoading() {
+  return (
+    <div className="home-tab-loading">
+      <p className="loading-text">Загрузка…</p>
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="container" style={{ paddingTop: '3rem', textAlign: 'center' }}>Загрузка…</div>}>
+    <Suspense fallback={null}>
       <HomePageContent />
     </Suspense>
   );
@@ -114,7 +125,7 @@ function MyList() {
   const router = useRouter();
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterState, setFilterState] = useState(defaultFilterState);
+  const [filterState, setFilterState] = useState(defaultFilterStateForMyList);
   const [rateModalItem, setRateModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv'; title: string } | null>(null);
   const [detailModalItem, setDetailModalItem] = useState<{ movieId: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [detailMovie, setDetailMovie] = useState<MovieDetail | null>(null);
@@ -187,7 +198,7 @@ function MyList() {
     }
   }
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <HomeTabLoading />;
 
   return (
     <>
@@ -205,10 +216,15 @@ function MyList() {
                 onClick={() => setDetailModalItem({ movieId: item.movie_id, mediaType: item.media_type })}
                 style={{ display: 'block', width: '100%', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)', border: 'none', padding: 0, cursor: 'pointer' }}
               >
-                <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {item.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
-                  <span className="film-card-poster-runtime">{item.runtime} мин</span>
-                )}
+                <div className="film-card-poster-inner">
+                  <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {item.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
+                    <span className="film-card-poster-runtime">{item.runtime} мин</span>
+                  )}
+                  {item.vote_average != null && Number.isFinite(item.vote_average) && (
+                    <span className="film-card-poster-vote">{Number(item.vote_average).toFixed(1)}</span>
+                  )}
+                </div>
               </button>
               <div className="film-card-body film-card-body-grid">
                 <h3 className="film-card-title">
@@ -224,10 +240,12 @@ function MyList() {
                 <p className="film-card-meta">{formatYearGenre(item.release_date, item.genre)}</p>
                 <div className="film-card-rating-slot">
                   <div className="film-card-rating-row">
-                    <StarRatingDisplay value={item.rating ?? 0} size="card" />
+                    <span className="film-card-rating-label">Моя оценка:</span>
+                    <span className="film-card-rating-value">{item.rating != null ? `${item.rating} из 10` : '—'}</span>
                   </div>
                   <div className="film-card-rating-row">
-                    <StarRatingDisplay value={item.partner_rating ?? 0} size="card" variant="partner" />
+                    <span className="film-card-rating-label">Оценка партнёра:</span>
+                    <span className="film-card-rating-value">{item.partner_rating != null ? `${item.partner_rating} из 10` : '—'}</span>
                   </div>
                 </div>
                 <div className="film-card-actions">
@@ -249,15 +267,6 @@ function MyList() {
                       Не просмотрено
                     </button>
                   )}
-                  <button type="button" className="btn-delete-card" onClick={() => removeFromList(item.movie_id, item.media_type)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                    Удалить
-                  </button>
                 </div>
               </div>
             </li>
@@ -276,7 +285,7 @@ function MyList() {
             closing={filterModalAnim.closing}
             onClose={filterModalAnim.requestClose}
             onApply={filterModalAnim.requestClose}
-            onReset={() => setFilterState(defaultFilterState)}
+            onReset={() => setFilterState(defaultFilterStateForMyList)}
             filterState={filterState}
             setFilterState={setFilterState}
             genres={genres}
@@ -562,9 +571,9 @@ function PartnerList() {
     }
   }
 
-  if (loading) return <p className="loading-text">Загрузка…</p>;
+  if (loading) return <HomeTabLoading />;
   if (error) return <p className="error-text">{error}</p>;
-  if (items.length === 0) return <p className="empty-text">Нет фильмов и сериалов или все просмотрены партнёром.</p>;
+  if (items.length === 0) return <p className="empty-text">Партнёр пока не добавил ни одного фильма.</p>;
 
   const renderDetailModal = () => {
     if (!detailModalItem || !detailMovie) return null;
@@ -586,7 +595,11 @@ function PartnerList() {
         aria-labelledby="detail-movie-title-partner"
       >
         <div className={`modal-card modal-card-detail modal-card-detail-scroll ${detailModalAnim.open ? 'modal-card--open' : ''} ${detailModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
-          <div className="detail-modal-banner" style={{ backgroundImage: bannerImage ? `url(${bannerImage})` : undefined }}>
+          <div className="detail-modal-banner">
+            {bannerImage && (
+              // eslint-disable-next-line @next/next/no-img-element -- dynamic TMDB banner URL in modal
+              <img src={bannerImage} alt="" className="detail-modal-banner-img" />
+            )}
             <button type="button" className="detail-modal-close" onClick={detailModalAnim.requestClose} aria-label="Закрыть">×</button>
             {inList && myItem?.rating != null && <span className="detail-modal-watched-icon" aria-hidden><CheckIcon size={18} /></span>}
             <div className="detail-modal-banner-content">
@@ -613,6 +626,14 @@ function PartnerList() {
                 <StarRatingDisplay value={partnerItem?.rating ?? 0} size="modal" variant="partner" />
               </div>
             </section>
+            <dl className="detail-modal-dl">
+              <dt>Режиссёр:</dt>
+              <dd>Не указан</dd>
+              <dt>Жанр:</dt>
+              <dd>{detailMovie.genres?.length ? detailMovie.genres.map((g) => g.name).join(', ') : '—'}</dd>
+              <dt>Оценка TMDB:</dt>
+              <dd>{detailMovie.vote_average != null && Number.isFinite(detailMovie.vote_average) ? `${Number(detailMovie.vote_average).toFixed(1)}` : '—'}</dd>
+            </dl>
             {detailMovie.overview && (
               <section className="detail-modal-section">
                 <h3 className="detail-modal-section-title">Описание</h3>
@@ -659,7 +680,6 @@ function PartnerList() {
 
   return (
     <>
-      <p className="section-desc" style={{ marginBottom: 12 }}>Только непросмотренные партнёром.</p>
       {filteredItems.length === 0 ? (
         <p className="empty-text">Нет фильмов, подходящих под выбранные фильтры</p>
       ) : (
@@ -676,7 +696,15 @@ function PartnerList() {
                 onClick={() => setDetailModalItem({ movieId: item.movie_id, mediaType: item.media_type })}
                 style={{ display: 'block', width: '100%', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)', border: 'none', padding: 0, cursor: 'pointer' }}
               >
-                <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div className="film-card-poster-inner">
+                  <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {item.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
+                    <span className="film-card-poster-runtime">{item.runtime} мин</span>
+                  )}
+                  {item.vote_average != null && Number.isFinite(item.vote_average) && (
+                    <span className="film-card-poster-vote">{Number(item.vote_average).toFixed(1)}</span>
+                  )}
+                </div>
               </button>
               <div className="film-card-body film-card-body-grid">
                 <h3 className="film-card-title">
@@ -692,7 +720,12 @@ function PartnerList() {
                 <p className="film-card-meta">{formatYearGenre(item.release_date, item.genre)}</p>
                 <div className="film-card-rating-slot">
                   <div className="film-card-rating-row">
-                    <StarRatingDisplay value={myItem?.rating ?? 0} size="card" />
+                    <span className="film-card-rating-label">Моя оценка:</span>
+                    <span className="film-card-rating-value">{myItem?.rating != null ? `${myItem.rating} из 10` : '—'}</span>
+                  </div>
+                  <div className="film-card-rating-row">
+                    <span className="film-card-rating-label">Оценка партнёра:</span>
+                    <span className="film-card-rating-value">{(item.rating ?? item.partner_rating) != null ? `${item.rating ?? item.partner_rating ?? 0} из 10` : '—'}</span>
                   </div>
                 </div>
                 <div className="film-card-actions">
@@ -745,7 +778,7 @@ function PartnerList() {
             closing={filterModalAnim.closing}
             onClose={filterModalAnim.requestClose}
             onApply={filterModalAnim.requestClose}
-            onReset={() => setFilterState(defaultFilterState)}
+            onReset={() => setFilterState(defaultFilterStateForMyList)}
             filterState={filterState}
             setFilterState={setFilterState}
             genres={genres}
@@ -880,7 +913,7 @@ function IntersectionsList() {
     }
   }
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <HomeTabLoading />;
   if (error) return <p className="error-text">{error}</p>;
   if (items.length === 0) return <p className="empty-text">Нет пересечений. Добавьте одинаковые фильмы или сериалы в свои списки.</p>;
 
@@ -934,8 +967,12 @@ function IntersectionsList() {
               </div>
             </section>
             <dl className="detail-modal-dl">
+              <dt>Режиссёр:</dt>
+              <dd>Не указан</dd>
               <dt>Жанр:</dt>
               <dd>{detailMovie.genres?.length ? detailMovie.genres.map((g) => g.name).join(', ') : '—'}</dd>
+              <dt>Оценка TMDB:</dt>
+              <dd>{detailMovie.vote_average != null && Number.isFinite(detailMovie.vote_average) ? `${Number(detailMovie.vote_average).toFixed(1)}` : '—'}</dd>
             </dl>
             {detailMovie.overview && (
               <section className="detail-modal-section">
@@ -986,12 +1023,17 @@ function IntersectionsList() {
                 onClick={() => setDetailModalItem({ movieId: item.movie_id, mediaType: item.media_type })}
                 style={{ display: 'block', width: '100%', aspectRatio: '2/3', overflow: 'hidden', background: 'var(--border)', border: 'none', padding: 0, cursor: 'pointer' }}
               >
-                <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {item.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
-                  <span className="film-card-poster-runtime">{item.runtime} мин</span>
-                )}
+                <div className="film-card-poster-inner">
+                  <PosterImage src={item.poster_path} width={200} height={300} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {item.runtime != null && Number.isFinite(item.runtime) && item.runtime > 0 && (
+                    <span className="film-card-poster-runtime">{item.runtime} мин</span>
+                  )}
+                  {item.vote_average != null && Number.isFinite(item.vote_average) && (
+                    <span className="film-card-poster-vote">{Number(item.vote_average).toFixed(1)}</span>
+                  )}
+                </div>
               </button>
-              <div className="film-card-body film-card-body-grid film-card-body-grid--no-rating">
+              <div className="film-card-body film-card-body-grid">
                 <h3 className="film-card-title">
                   <button
                     type="button"
@@ -1003,6 +1045,16 @@ function IntersectionsList() {
                   </button>
                 </h3>
                 <p className="film-card-meta">{formatYearGenre(item.release_date, item.genre)}</p>
+                <div className="film-card-rating-slot">
+                  <div className="film-card-rating-row">
+                    <span className="film-card-rating-label">Моя оценка:</span>
+                    <span className="film-card-rating-value">{item.my_rating != null ? `${item.my_rating} из 10` : '—'}</span>
+                  </div>
+                  <div className="film-card-rating-row">
+                    <span className="film-card-rating-label">Оценка партнёра:</span>
+                    <span className="film-card-rating-value">{item.partner_rating != null ? `${item.partner_rating} из 10` : '—'}</span>
+                  </div>
+                </div>
                 <div className="film-card-actions">
                   {watched ? (
                     <button type="button" className="btn-watched btn-watched-card" onClick={() => unwatch(item.movie_id, item.media_type)}>
@@ -1014,13 +1066,6 @@ function IntersectionsList() {
                       Не просмотрено
                     </button>
                   )}
-                  <button type="button" className="btn-delete-card" onClick={() => removeFromList(item.movie_id, item.media_type)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                      <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                    Удалить
-                  </button>
                 </div>
               </div>
             </li>

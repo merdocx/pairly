@@ -7,6 +7,8 @@ export type FilterState = {
   genre: string;
   sortBy: 'added_at' | 'rating' | 'title' | 'year';
   sortOrder: 'asc' | 'desc';
+  /** Сначала непросмотренные (только для списка «Моё»). */
+  unwatchedFirst?: boolean;
 };
 
 export const defaultFilterState: FilterState = {
@@ -17,6 +19,12 @@ export const defaultFilterState: FilterState = {
   genre: '',
   sortBy: 'added_at',
   sortOrder: 'desc',
+};
+
+/** Дефолт для вкладки «Моё»: сначала непросмотренные. */
+export const defaultFilterStateForMyList: FilterState = {
+  ...defaultFilterState,
+  unwatchedFirst: true,
 };
 
 /** Состояние фильтров для поиска (только тип и сортировка). */
@@ -93,7 +101,13 @@ export function filterAndSortWatchlist<T extends WatchlistLike>(
   }
 
   const mult = state.sortOrder === 'asc' ? 1 : -1;
+  const hasRating = (i: T) => i.rating != null && Number.isFinite(i.rating);
   list.sort((a, b) => {
+    if (state.unwatchedFirst) {
+      const aW = hasRating(a) ? 1 : 0;
+      const bW = hasRating(b) ? 1 : 0;
+      if (aW !== bW) return aW - bW;
+    }
     switch (state.sortBy) {
       case 'title':
         return mult * (a.title || '').localeCompare(b.title || '', 'ru');

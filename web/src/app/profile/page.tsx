@@ -1,14 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import Cropper, { type Area } from 'react-easy-crop';
+import { api, getApiUrl } from '@/lib/api';
 import type { User, Pair } from '@/lib/api';
 import type { WatchlistItem } from '@/lib/api';
 import AppLayout from '@/components/AppLayout';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useModalAnimation } from '@/hooks/useModalAnimation';
 import { useToast } from '@/components/Toast';
+
+function createImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const img = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No canvas context');
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  ctx.drawImage(img, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))), 'image/jpeg', 0.9);
+  });
+}
 
 function AvatarIcon() {
   return (
@@ -51,9 +75,31 @@ export default function ProfilePage() {
   const [addPairModalOpen, setAddPairModalOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [justCreatedCode, setJustCreatedCode] = useState<string | null>(null);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const addPairModalAnim = useModalAnimation(addPairModalOpen, () => setAddPairModalOpen(false));
   const leaveConfirmAnim = useModalAnimation(leaveConfirmOpen, () => setLeaveConfirmOpen(false));
+  const avatarModalAnim = useModalAnimation(avatarModalOpen, () => {
+    setAvatarModalOpen(false);
+    setAvatarFile(null);
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl(null);
+    }
+    setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  });
   const { showToast } = useToast();
+
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
   useEffect(() => {
     api<User>('/api/auth/me')
@@ -149,6 +195,56 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleAvatarUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!avatarPreviewUrl) return;
+    const area = croppedAreaPixels;
+    if (!area) {
+      showToast('Подвиньте или увеличьте фото, затем нажмите Загрузить');
+      return;
+    }
+    setAvatarUploading(true);
+    try {
+      const blob = await getCroppedImg(avatarPreviewUrl, area);
+      const formData = new FormData();
+      formData.append('file', blob, 'avatar.jpg');
+      const base = getApiUrl();
+      const res = await fetch(`${base}/api/profile/avatar`, {
+        method: 'PUT',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || 'Ошибка загрузки');
+      }
+      const data = (await res.json()) as { avatar_url: string };
+      setUser((prev) => (prev ? { ...prev, avatar_url: data.avatar_url } : null));
+      avatarModalAnim.requestClose();
+      setAvatarFile(null);
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl(null);
+      setCroppedAreaPixels(null);
+      showToast('Фото обновлено');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Ошибка загрузки');
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
+  function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarPreviewUrl(null);
+    setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setAvatarFile(file);
+    if (file) setAvatarPreviewUrl(URL.createObjectURL(file));
+    e.target.value = '';
+  }
+
   if (loading) return <AppLayout><div className="container"><LoadingScreen /></div></AppLayout>;
   if (!user) return null;
 
@@ -159,9 +255,21 @@ export default function ProfilePage() {
       <div className="container">
         <div className="profile-card">
           <div className="profile-card-row">
-            <div className="profile-avatar">
-              <AvatarIcon />
-            </div>
+            <button
+              type="button"
+              className="profile-avatar-wrap"
+              onClick={() => setAvatarModalOpen(true)}
+              aria-label="Изменить фото"
+            >
+              <div className="profile-avatar">
+                {user.avatar_url ? (
+                  <img src={`${getApiUrl()}${user.avatar_url}`} alt="" className="profile-avatar-img" />
+                ) : (
+                  <AvatarIcon />
+                )}
+              </div>
+              <span className="profile-avatar-change">Изменить</span>
+            </button>
             <div>
               <p className="profile-user-name">{user.name || '—'}</p>
               <p className="profile-user-email">{user.email}</p>
@@ -264,6 +372,84 @@ export default function ProfilePage() {
                 </button>
                 <button type="submit" disabled={joining || code.length !== 6} className="btn-login-primary btn-login-primary-full">
                   {joining ? '…' : 'Создать пару'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {avatarModalOpen && (
+        <div
+          className={`modal-overlay ${avatarModalAnim.open ? 'modal-overlay--open' : ''} ${avatarModalAnim.closing ? 'modal-overlay--closing' : ''}`}
+          onClick={avatarModalAnim.requestClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="avatar-modal-title"
+        >
+          <div className={`modal-card ${avatarModalAnim.open ? 'modal-card--open' : ''} ${avatarModalAnim.closing ? 'modal-card--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <h2 id="avatar-modal-title" className="profile-section-title" style={{ marginBottom: 16 }}>Изменить фото</h2>
+            <form onSubmit={handleAvatarUpload}>
+              {!avatarPreviewUrl ? (
+                <>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleAvatarFileChange}
+                    className="profile-avatar-input"
+                  />
+                  <p className="section-desc" style={{ marginTop: 8, marginBottom: 16 }}>JPEG, PNG или WebP, не более 2 МБ</p>
+                </>
+              ) : (
+                <>
+                  <div className="profile-avatar-crop-wrap">
+                    <Cropper
+                      image={avatarPreviewUrl}
+                      crop={crop}
+                      zoom={zoom}
+                      aspect={1}
+                      cropShape="round"
+                      showGrid={false}
+                      onCropChange={setCrop}
+                      onZoomChange={setZoom}
+                      onCropComplete={onCropComplete}
+                    />
+                  </div>
+                  <p className="section-desc" style={{ marginTop: 8, marginBottom: 8 }}>Подвиньте фото или измените масштаб — в кружочке будет видна только эта область</p>
+                  <div className="profile-avatar-zoom-row">
+                    <span className="profile-avatar-zoom-label">Масштаб</span>
+                    <input
+                      type="range"
+                      min={1}
+                      max={3}
+                      step={0.1}
+                      value={zoom}
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="profile-avatar-zoom-slider"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="profile-avatar-change-file"
+                    onClick={() => document.getElementById('profile-avatar-file-input')?.click()}
+                  >
+                    Выбрать другое фото
+                  </button>
+                  <input
+                    id="profile-avatar-file-input"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleAvatarFileChange}
+                    className="profile-avatar-input profile-avatar-input--hidden"
+                  />
+                </>
+              )}
+              <div className="modal-add-pair-actions" style={{ marginTop: 16 }}>
+                <button type="button" className="btn-rate-secondary btn-rate-secondary-full" onClick={avatarModalAnim.requestClose}>
+                  Отмена
+                </button>
+                <button type="submit" disabled={!avatarFile || avatarUploading} className="btn-login-primary btn-login-primary-full">
+                  {avatarUploading ? 'Загрузка…' : 'Загрузить'}
                 </button>
               </div>
             </form>

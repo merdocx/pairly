@@ -1,10 +1,7 @@
-import type { Metadata } from 'next';
-import { Suspense } from 'react';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { NavigationProgress } from '@/components/NavigationProgress';
-import PageTransition from '@/components/PageTransition';
-import { ToastProvider } from '@/components/Toast';
+import { ClientLayoutContent } from '@/components/ClientLayoutContent';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter' });
 
@@ -13,14 +10,11 @@ export const metadata: Metadata = {
   description: 'Совместные списки фильмов для пар',
 };
 
-/** Fallback при suspend (напр. useSearchParams) — чтобы не было белого экрана. */
-function NavFallback() {
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--muted)', fontSize: 14 }}>
-      Загрузка…
-    </div>
-  );
-}
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export default function RootLayout({
   children,
@@ -29,15 +23,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" className={inter.variable}>
-      <body className={inter.className}>
-        <ToastProvider>
-          <NavigationProgress />
-          <PageTransition>
-            <Suspense fallback={<NavFallback />}>
-              {children}
-            </Suspense>
-          </PageTransition>
-        </ToastProvider>
+      <body className={inter.className} style={{ background: '#f9fafb', margin: 0 }}>
+        <noscript>
+          <div
+            className="min-h-viewport"
+            style={{
+              padding: 24,
+              textAlign: 'center',
+              background: 'var(--bg)',
+              color: 'var(--text)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+          >
+            <p style={{ margin: 0 }}>Для работы приложения включите JavaScript.</p>
+          </div>
+        </noscript>
+        <ClientLayoutContent>{children}</ClientLayoutContent>
       </body>
     </html>
   );

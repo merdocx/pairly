@@ -18,7 +18,7 @@ export class ClientErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif', background: 'var(--bg)', minHeight: '100vh' }}>
+        <div className="min-h-viewport" style={{ padding: 24, fontFamily: 'system-ui, sans-serif', background: 'var(--bg)' }}>
           <h2 style={{ color: 'var(--text)' }}>Ошибка загрузки</h2>
           <p style={{ color: 'var(--text-secondary)' }}>{this.state.error.message}</p>
           <button

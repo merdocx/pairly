@@ -117,12 +117,14 @@ cd backend
 cp ../.env .env   # или задать переменные в backend/.env
 npm install
 npm run db:migrate
-npm run dev      # http://localhost:4000
+npm run build
+# Запуск: через PM2 (см. ниже «Прод-сервер»)
 
-# Веб (в другом терминале)
+# Веб
 cd web
 npm install
-npm run dev      # http://localhost:3000
+npm run build
+# Запуск: через PM2 (см. ниже «Прод-сервер»)
 ```
 
 Переменные окружения описаны в `.env.example`. Для бэкенда обязательны: `DATABASE_URL`, `JWT_SECRET`, `TMDB_API_KEY`. Для веб — по желанию `NEXT_PUBLIC_API_URL` (по умолчанию `http://localhost:4000`).

@@ -1,8 +1,7 @@
-# Pairly: PostgreSQL + Redis for local development.
+# Pairly: PostgreSQL + Redis (для прода).
 # Run: docker compose up -d
-# Backend: set DATABASE_URL=postgresql://pairly:pairly@localhost:5432/pairly and REDIS_URL=redis://localhost:6379
-# Then: cd backend && npm run db:migrate && npm run dev
-# Web: cd web && npm run dev
+# Backend: DATABASE_URL=postgresql://pairly:pairly@localhost:5432/pairly, REDIS_URL=redis://localhost:6379
+# Запуск приложений: cd backend && npm run build && pm2 start ecosystem.config.cjs (из корня репо)
 
 services:
   postgres:
